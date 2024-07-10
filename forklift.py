@@ -46,7 +46,8 @@ if uploaded_file is not None:
         x=pivot_table.columns,
         y=pivot_table.index,
         colorscale=[[0, 'white'], [1, 'purple']],
-        hoverinfo='text'
+        hoverinfo='text',
+        text=[['운영 횟수: {}번'.format(int(val)) for val in row] for row in pivot_table.values]  # 툴팁에 운영 횟수 추가
     )
     fig.add_trace(heatmap)
     fig.update_layout(
@@ -57,6 +58,11 @@ if uploaded_file is not None:
         paper_bgcolor='white',
         margin=dict(l=50, r=50, t=100, b=50)
     )
+
+    # 그래프 크기 조정 슬라이더
+    graph_width = st.slider('Select graph width', 500, 2000, 1800)  # 그래프 폭 조정 슬라이더
+    graph_height = st.slider('Select graph height', 300, 1500, 900)  # 그래프 높이 조정 슬라이더
+    fig.update_layout(width=graph_width, height=graph_height)
 
     # Streamlit을 통해 플롯 보여주기, 컨테이너 너비 사용
     st.plotly_chart(fig, use_container_width=True)
