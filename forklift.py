@@ -1,12 +1,7 @@
-streamlit
-pandas
-plotly
-
 import streamlit as st
 import pandas as pd
 import plotly.graph_objs as go
 from plotly.subplots import make_subplots
-import streamlit as st
 
 # Streamlit 페이지 설정
 st.set_page_config(page_title='My Streamlit App', layout='wide', initial_sidebar_state='collapsed')
@@ -65,4 +60,3 @@ if uploaded_file is not None:
 
     # Streamlit을 통해 플롯 보여주기, 컨테이너 너비 사용
     st.plotly_chart(fig, use_container_width=True)
-
