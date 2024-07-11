@@ -20,8 +20,9 @@ with st.sidebar:
         selected_forklift_class = st.selectbox('차대 분류 선택:', ['전체'] + df['차대 분류'].dropna().unique().tolist())
         graph_height = st.slider('Select graph height', 300, 1500, 900)
 
-# 초기화
-title = "분석 대기 중..."  # 초기 제목 설정
+# 변수 초기화
+title = "분석 대기 중..."
+index_name = "데이터 선택"
 
 # 메인 페이지 설정
 if uploaded_file is not None and 'df' in locals():
@@ -31,7 +32,7 @@ if uploaded_file is not None and 'df' in locals():
             filtered_df = filtered_df[filtered_df['부서'] == department]
         if forklift_class != '전체':
             filtered_df = filtered_df[filtered_df['차대 분류'] == forklift_class]
-        
+
         if analysis_type == '운영 대수':
             index_name = '시작 날짜'
             value_name = '차대 코드'
@@ -44,10 +45,10 @@ if uploaded_file is not None and 'df' in locals():
             title = '차대 코드별 시간대 운영 횟수 Heatmap'
 
         pivot_table = filtered_df.pivot_table(index=index_name, columns='시간대', values=value_name, aggfunc=agg_func).fillna(0)
-        return pivot_table
+        return pivot_table, title, index_name
 
-    pivot_table = generate_pivot(selected_department, selected_forklift_class)
-    
+    pivot_table, title, index_name = generate_pivot(selected_department, selected_forklift_class)
+
     # Heatmap 생성
     fig = make_subplots(rows=1, cols=1)
     heatmap = go.Heatmap(
