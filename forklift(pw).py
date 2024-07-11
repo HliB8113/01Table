@@ -1,6 +1,7 @@
+
+from openpyxl import load_workbook
 import requests
 import io
-from openpyxl import load_workbook
 
 # Streamlit 페이지 설정
 st.set_page_config(page_title='My Streamlit App', layout='wide', initial_sidebar_state='expanded')
@@ -12,18 +13,19 @@ password = st.sidebar.text_input("파일 암호 입력:", type="password")
 
 # 파일 다운로드 및 로드
 if password:
-    response = requests.get(file_url)
-    bytes_io = io.BytesIO(response.content)
-    workbook = load_workbook(filename=bytes_io, read_only=True, password=password)
-    sheet = workbook.active
-    data = sheet.values
-    columns = next(data)[0:]
-    df = pd.DataFrame(data, columns=columns)
+    try:
+        response = requests.get(file_url)
+        bytes_io = io.BytesIO(response.content)
+        workbook = load_workbook(filename=bytes_io, read_only=True, password=password)
+        sheet = workbook.active
+        data = sheet.values
+        columns = next(data)[0:]
+        df = pd.DataFrame(data, columns=columns)
 
-    # DataFrame을 처리하여 Streamlit 대시보드에 표시
-    # 데이터 클린징, 조작, 시각화 코드 추가
-    # 예시: df['시간대'] = pd.to_datetime(df['시간대'], format='%H:%M').dt.strftime('%H:%M')
-    # 이하 시각화 코드...
+        st.write("파일 로드 성공!", df.head())  # 파일이 성공적으로 로드됐다는 메시지와 함께 데이터의 첫 부분을 보여줍니다.
+    except Exception as e:
+        st.error(f"파일 로드 중 에러 발생: {e}")
+
 
 import streamlit as st
 import pandas as pd
