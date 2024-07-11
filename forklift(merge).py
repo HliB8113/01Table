@@ -26,8 +26,13 @@ index_name = "데이터 선택"
 
 # 메인 페이지 설정
 if uploaded_file is not None and 'df' in locals():
-    def generate_pivot(department, forklift_class):
+    # 날짜 필터 슬라이더
+    date_options = df['시작 날짜'].unique().tolist()
+    selected_date = st.slider('Select date', min_value=min(date_options), max_value=max(date_options), value=min(date_options))
+
+    def generate_pivot(department, forklift_class, selected_date):
         filtered_df = df.copy()
+        filtered_df = filtered_df[filtered_df['시작 날짜'] == selected_date]
         if department != '전체':
             filtered_df = filtered_df[filtered_df['부서'] == department]
         if forklift_class != '전체':
@@ -38,16 +43,18 @@ if uploaded_file is not None and 'df' in locals():
             value_name = '차대 코드'
             agg_func = 'nunique'
             title = '시작 날짜 및 시간대별 차대 코드 운영 대수 Heatmap'
+            text_template = '운영 대수: %{text}대'
         else:
             index_name = '차대 코드'
             value_name = '시작 날짜'
             agg_func = 'count'
             title = '차대 코드별 시간대 운영 횟수 Heatmap'
+            text_template = '운영 횟수: %{text}번'
 
         pivot_table = filtered_df.pivot_table(index=index_name, columns='시간대', values=value_name, aggfunc=agg_func).fillna(0)
-        return pivot_table, title, index_name
+        return pivot_table, title, index_name, text_template
 
-    pivot_table, title, index_name = generate_pivot(selected_department, selected_forklift_class)
+    pivot_table, title, index_name, text_template = generate_pivot(selected_department, selected_forklift_class, selected_date)
 
     # Heatmap 생성
     fig = make_subplots(rows=1, cols=1)
@@ -57,7 +64,8 @@ if uploaded_file is not None and 'df' in locals():
         y=pivot_table.index,
         colorscale=[[0, 'white'], [1, 'purple']],
         hoverinfo='text',
-        text=[[f'{int(val)}번' for val in row] for row in pivot_table.values]
+        text=[[f'{int(val)}' for val in row] for row in pivot_table.values],
+        texttemplate=text_template
     )
     fig.add_trace(heatmap)
     fig.update_layout(
@@ -67,8 +75,8 @@ if uploaded_file is not None and 'df' in locals():
         plot_bgcolor='white',
         paper_bgcolor='white',
         margin=dict(l=50, r=50, t=100, b=50),
-        width=900,  # 고정된 너비
-        height=graph_height  # 조정 가능한 높이
+        width=900,
+        height=graph_height
     )
 
     # Streamlit을 통해 플롯 보여주기
