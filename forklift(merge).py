@@ -16,25 +16,27 @@ with st.sidebar:
         df.dropna(subset=['부서', '차대 분류'], inplace=True)
 
         # 분석 유형 선택
-        analysis_type = st.radio(
-            "분석 유형 선택:",
-            ('운영 대수', '운영 횟수')
-        )
+        analysis_type = st.radio("분석 유형 선택:", ('운영 대수', '운영 횟수'))
 
         # 선택 상자를 통한 부서와 차대 분류 선택
         menu_width = st.slider('조정 메뉴 너비', 100, 300, 150)
         st.markdown(f'<style>.stSelectbox{{width: {menu_width}px;}}</style>', unsafe_allow_html=True)
-        selected_department = st.selectbox(
-            '부서 선택:',
-            ['전체'] + df['부서'].dropna().unique().tolist()
-        )
-        selected_forklift_class = st.selectbox(
-            '차대 분류 선택:',
-            ['전체'] + df['차대 분류'].dropna().unique().tolist()
-        )
+        selected_department = st.selectbox('부서 선택:', ['전체'] + df['부서'].dropna().unique().tolist())
+        selected_forklift_class = st.selectbox('차대 분류 선택:', ['전체'] + df['차대 분류'].dropna().unique().tolist())
 
         # 그래프 높이 슬라이더
-        graph_height = st.slider('그래프 높이 선택', 300, 1500, 900, step=50, orientation='vertical')
+        graph_height = st.slider('그래프 높이 선택', 300, 1500, 900, step=50)
+
+# 메인 화면 설정
+if uploaded_file is not None and 'df' in locals():
+    # 데이터 전처리 및 피벗 테이블 생성 로직은 이전 코드를 참조하여 여기에 추가
+
+    # 그래프 높이 조정
+    fig.update_layout(height=graph_height)
+
+    # Streamlit을 통해 플롯 보여주기
+    st.plotly_chart(fig, use_container_width=True)
+
 
 if uploaded_file is not None:
     # 데이터 전처리 및 피벗 테이블 생성
