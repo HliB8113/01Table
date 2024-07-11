@@ -9,7 +9,7 @@ def load_encrypted_data(password):
     cipher_suite = Fernet(key)
     
     # GitHub에서 암호화된 파일 다운로드
-    encrypted_file = 'https://raw.githubusercontent.com/username/repo/main/datafile.csv.encrypted'
+    encrypted_file = 'https://github.com/HliB8113/01Table/blob/main/%EC%A7%80%EA%B2%8C%EC%B0%A8%20%EC%97%91%EC%85%80.xlsx'
     encrypted_data = pd.read_csv(encrypted_file, header=None).values[0][0]
     
     # 데이터 복호화 시도
