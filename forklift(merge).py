@@ -12,6 +12,7 @@ with st.sidebar:
     if uploaded_file is not None:
         df = pd.read_csv(uploaded_file)
         df['시간대'] = pd.to_datetime(df['시간대'], format='%H:%M').dt.strftime('%H:%M')
+        df['시작 날짜'] = pd.to_datetime(df['시작 날짜']).dt.strftime('%Y-%m-%d')  # 날짜 형식을 년-월-일로 조정
         df = df.sort_values(by=['시간대'])
         df.dropna(subset=['부서', '차대 분류'], inplace=True)
 
@@ -20,19 +21,16 @@ with st.sidebar:
         selected_forklift_class = st.selectbox('차대 분류 선택:', ['전체'] + df['차대 분류'].dropna().unique().tolist())
         graph_height = st.slider('Select graph height', 300, 1500, 900)
 
-# 변수 초기화
-title = "분석 대기 중..."
-index_name = "데이터 선택"
+        # 날짜 선택 슬라이더 구성
+        if '시작 날짜' in df:
+            date_options = sorted(df['시작 날짜'].unique())
+            if date_options:
+                selected_date = st.select_slider('Select date', options=date_options, value=date_options[0])
 
 # 메인 페이지 설정
-if uploaded_file is not None and 'df' in locals():
-    # 날짜 필터 슬라이더
-    date_options = df['시작 날짜'].unique().tolist()
-    selected_date = st.slider('Select date', min_value=min(date_options), max_value=max(date_options), value=min(date_options))
-
-    def generate_pivot(department, forklift_class, selected_date):
-        filtered_df = df.copy()
-        filtered_df = filtered_df[filtered_df['시작 날짜'] == selected_date]
+if uploaded_file is not None and 'df' in locals() and 'selected_date' in locals():
+    def generate_pivot(department, forklift_class):
+        filtered_df = df[df['시작 날짜'] == selected_date]
         if department != '전체':
             filtered_df = filtered_df[filtered_df['부서'] == department]
         if forklift_class != '전체':
@@ -54,7 +52,7 @@ if uploaded_file is not None and 'df' in locals():
         pivot_table = filtered_df.pivot_table(index=index_name, columns='시간대', values=value_name, aggfunc=agg_func).fillna(0)
         return pivot_table, title, index_name, text_template
 
-    pivot_table, title, index_name, text_template = generate_pivot(selected_department, selected_forklift_class, selected_date)
+    pivot_table, title, index_name, text_template = generate_pivot(selected_department, selected_forklift_class)
 
     # Heatmap 생성
     fig = make_subplots(rows=1, cols=1)
