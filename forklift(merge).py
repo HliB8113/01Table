@@ -45,7 +45,7 @@ if uploaded_file is not None and 'df' in locals():
             agg_func = 'nunique'
             title = '지게차 일자별 운영 대수'
         else:
-            index_name = '지게차'
+            index_name = '차대 코드'
             value_name = '시작 날짜'
             agg_func = 'count'
             title = '지게차 시간대별 운영 횟수'
