@@ -43,12 +43,12 @@ if uploaded_file is not None and 'df' in locals():
             index_name = '시작 날짜'
             value_name = '차대 코드'
             agg_func = 'nunique'
-            title = '시작 날짜 및 시간대별 차대 코드 운영 대수 Heatmap'
+            title = '지게차 일자별 운영 대수 Heatmap'
         else:
             index_name = '차대 코드'
             value_name = '시작 날짜'
             agg_func = 'count'
-            title = '차대 코드별 시간대 운영 횟수 Heatmap'
+            title = '지게차 시간대별 운영 횟수 Heatmap'
 
         pivot_table = filtered_df.pivot_table(index=index_name, columns='시간대', values=value_name, aggfunc=agg_func).fillna(0)
         return pivot_table, title, index_name
@@ -63,7 +63,7 @@ if uploaded_file is not None and 'df' in locals():
         y=pivot_table.index,
         colorscale=[[0, 'white'], [1, 'purple']],
         hoverinfo='text',
-        text=[[f'운영 {analysis_type} {int(val)}번' for val in row] for row in pivot_table.values]
+        text=[[f' {analysis_type} {int(val)}번' for val in row] for row in pivot_table.values]
     )
     fig.add_trace(heatmap)
     fig.update_layout(
