@@ -12,8 +12,12 @@ with st.sidebar:
     if uploaded_file is not None:
         df = pd.read_csv(uploaded_file)
         df['시간대'] = pd.to_datetime(df['시간대'], format='%H:%M').dt.strftime('%H:%M')
-        df['시작 날짜'] = pd.to_datetime(df['시작 날짜']).dt.strftime('%d')  # 날짜 형식을 일자만 표시하도록 변경
-        df = df[(df['시작 날짜'] >= '01') & (df['시작 날짜'] <= '31')]  # 5월 데이터만 선택
+
+        # 날짜를 일자로 파싱하고 특정 월(예: 5월) 데이터만 필터링
+        df['시작 날짜'] = pd.to_datetime(df['시작 날짜'])
+        df = df[df['시작 날짜'].dt.month == 5]  # 5월 데이터만 선택
+        df['시작 날짜'] = df['시작 날짜'].dt.strftime('%d')  # 일자 형식으로 변경
+
         df = df.sort_values(by=['시작 날짜', '시간대'])
         df.dropna(subset=['부서', '차대 분류'], inplace=True)
 
@@ -22,21 +26,14 @@ with st.sidebar:
         selected_forklift_class = st.selectbox('차대 분류 선택:', ['전체'] + df['차대 분류'].dropna().unique().tolist())
         graph_height = st.slider('Select graph height', 300, 1500, 900)
 
-        # 시작 날짜 범위 선택 슬라이더
-        min_date = df['시작 날짜'].min()
-        max_date = df['시작 날짜'].max()
-        selected_date = st.slider('Select date range', min_value=int(min_date), max_value=int(max_date),
-                                  value=(int(min_date), int(max_date)), step=1)
-
 # 변수 초기화
 title = "분석 대기 중..."
 index_name = "데이터 선택"
 
 # 메인 페이지 설정
 if uploaded_file is not None and 'df' in locals():
-    def generate_pivot(department, forklift_class, selected_date):
+    def generate_pivot(department, forklift_class):
         filtered_df = df.copy()
-        filtered_df = filtered_df[(filtered_df['시작 날짜'] >= str(selected_date[0])) & (filtered_df['시작 날짜'] <= str(selected_date[1]))]
         if department != '전체':
             filtered_df = filtered_df[filtered_df['부서'] == department]
         if forklift_class != '전체':
@@ -47,18 +44,16 @@ if uploaded_file is not None and 'df' in locals():
             value_name = '차대 코드'
             agg_func = 'nunique'
             title = '시작 날짜 및 시간대별 차대 코드 운영 대수 Heatmap'
-            unit = '대'
         else:
             index_name = '차대 코드'
             value_name = '시작 날짜'
             agg_func = 'count'
             title = '차대 코드별 시간대 운영 횟수 Heatmap'
-            unit = '번'
 
         pivot_table = filtered_df.pivot_table(index=index_name, columns='시간대', values=value_name, aggfunc=agg_func).fillna(0)
-        return pivot_table, title, index_name, unit
+        return pivot_table, title, index_name
 
-    pivot_table, title, index_name, unit = generate_pivot(selected_department, selected_forklift_class, selected_date)
+    pivot_table, title, index_name = generate_pivot(selected_department, selected_forklift_class)
 
     # Heatmap 생성
     fig = make_subplots(rows=1, cols=1)
@@ -68,7 +63,7 @@ if uploaded_file is not None and 'df' in locals():
         y=pivot_table.index,
         colorscale=[[0, 'white'], [1, 'purple']],
         hoverinfo='text',
-        text=[[f'운영 {analysis_type} {int(val)}{unit}' for val in row] for row in pivot_table.values]
+        text=[[f'운영 {analysis_type} {int(val)}번' for val in row] for row in pivot_table.values]
     )
     fig.add_trace(heatmap)
     fig.update_layout(
