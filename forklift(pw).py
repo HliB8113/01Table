@@ -1,29 +1,29 @@
-from cryptography.fernet import Fernet
+import requests
+import io
+from openpyxl import load_workbook
 
-# Streamlit에서 암호 입력
-password = st.text_input("파일 비밀번호를 입력하세요:", type="password")
+# Streamlit 페이지 설정
+st.set_page_config(page_title='My Streamlit App', layout='wide', initial_sidebar_state='expanded')
 
-def load_encrypted_data(password):
-    # Fernet 키 생성 (이 키는 별도로 저장하고 관리해야 합니다)
-    key = Fernet.generate_key()
-    cipher_suite = Fernet(key)
-    
-    # GitHub에서 암호화된 파일 다운로드
-    encrypted_file = 'https://github.com/HliB8113/01Table/blob/main/%EC%A7%80%EA%B2%8C%EC%B0%A8%20%EC%97%91%EC%85%80.xlsx'
-    encrypted_data = pd.read_csv(encrypted_file, header=None).values[0][0]
-    
-    # 데이터 복호화 시도
-    try:
-        decrypted_data = cipher_suite.decrypt(encrypted_data.encode()).decode()
-        df = pd.read_csv(pd.compat.StringIO(decrypted_data))
-        return df
-    except Exception as e:
-        st.error("비밀번호가 잘못되었습니다.")
-        return pd.DataFrame()
+# 파일 URL과 암호 입력 받기
+st.sidebar.title("파일 설정")
+file_url = "https://github.com/HliB8113/01Table/raw/main/%EC%A7%80%EA%B2%8C%EC%B0%A8%20%EC%97%91%EC%85%80.xlsx"
+password = st.sidebar.text_input("파일 암호 입력:", type="password")
 
+# 파일 다운로드 및 로드
 if password:
-    df = load_encrypted_data(password)
+    response = requests.get(file_url)
+    bytes_io = io.BytesIO(response.content)
+    workbook = load_workbook(filename=bytes_io, read_only=True, password=password)
+    sheet = workbook.active
+    data = sheet.values
+    columns = next(data)[0:]
+    df = pd.DataFrame(data, columns=columns)
 
+    # DataFrame을 처리하여 Streamlit 대시보드에 표시
+    # 데이터 클린징, 조작, 시각화 코드 추가
+    # 예시: df['시간대'] = pd.to_datetime(df['시간대'], format='%H:%M').dt.strftime('%H:%M')
+    # 이하 시각화 코드...
 
 import streamlit as st
 import pandas as pd
