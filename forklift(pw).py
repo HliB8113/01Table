@@ -2,9 +2,9 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objs as go
 from plotly.subplots import make_subplots
-from openpyxl import load_workbook
-import requests
+import msoffcrypto
 import io
+import requests
 
 # Streamlit 페이지 설정
 st.set_page_config(page_title='My Streamlit App', layout='wide', initial_sidebar_state='expanded')
@@ -18,16 +18,21 @@ input_password = st.sidebar.text_input("파일 암호 입력:", type="password")
 # 파일 다운로드 및 로드
 if input_password:
     try:
-        # 파일을 요청하고 비밀번호로 엑셀 파일 열기
+        # 파일을 요청하고 BytesIO로 바로 읽기
         response = requests.get(file_url)
-        bytes_io = io.BytesIO(response.content)
+        encrypted_file = io.BytesIO(response.content)
+        
+        # msoffcrypto를 사용하여 파일 열기
+        file = msoffcrypto.OfficeFile(encrypted_file)
+        file.load_key(password=input_password)  # 비밀번호 제공
+        
+        # 해독된 내용을 새로운 BytesIO 객체로 추출
+        decrypted_file = io.BytesIO()
+        file.decrypt(decrypted_file)
 
-        # openpyxl을 사용하여 비밀번호로 보호된 파일 열기
-        workbook = load_workbook(filename=bytes_io, read_only=True, password=input_password)
-        sheet = workbook.active
-        data = sheet.values
-        columns = next(data)[0:]
-        df = pd.DataFrame(data, columns=columns)
+        # pandas로 데이터 로드
+        decrypted_file.seek(0)  # 포인터를 파일 시작 부분으로 이동
+        df = pd.read_excel(decrypted_file)
 
         # 데이터 전처리
         df['시간대'] = pd.to_datetime(df['시간대'], format='%H:%M').dt.strftime('%H:%M')
