@@ -21,6 +21,8 @@ if input_password:
         # 파일을 요청하고 비밀번호로 엑셀 파일 열기
         response = requests.get(file_url)
         bytes_io = io.BytesIO(response.content)
+
+        # openpyxl을 사용하여 비밀번호로 보호된 파일 열기
         workbook = load_workbook(filename=bytes_io, read_only=True, password=input_password)
         sheet = workbook.active
         data = sheet.values
@@ -88,6 +90,7 @@ if input_password:
         )
 
         st.plotly_chart(fig, use_container_width=True)
+
     except Exception as e:
         st.error(f"파일 로드 중 에러 발생: {e}")
 else:
