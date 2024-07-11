@@ -43,12 +43,12 @@ if uploaded_file is not None and 'df' in locals():
             index_name = '시작 날짜'
             value_name = '차대 코드'
             agg_func = 'nunique'
-            title = '지게차 일자별 운영 대수 Heatmap'
+            title = '지게차 일자별 운영 대수'
         else:
             index_name = '차대 코드'
             value_name = '시작 날짜'
             agg_func = 'count'
-            title = '지게차 시간대별 운영 횟수 Heatmap'
+            title = '지게차 시간대별 운영 횟수'
 
         pivot_table = filtered_df.pivot_table(index=index_name, columns='시간대', values=value_name, aggfunc=agg_func).fillna(0)
         return pivot_table, title, index_name
