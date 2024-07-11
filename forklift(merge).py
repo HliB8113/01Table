@@ -40,7 +40,7 @@ if uploaded_file is not None and 'df' in locals():
             filtered_df = filtered_df[filtered_df['차대 분류'] == forklift_class]
 
         if analysis_type == '운영 대수':
-            index_name = '시작 날짜'
+            index_name = '날짜'
             value_name = '차대 코드'
             agg_func = 'nunique'
             title = '지게차 일자별 운영 대수'
