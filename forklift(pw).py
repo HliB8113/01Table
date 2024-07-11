@@ -1,37 +1,29 @@
-import streamlit as st
-import pandas as pd
-from io import BytesIO
-import requests
+from cryptography.fernet import Fernet
 
-# Streamlit 페이지 설정
-st.set_page_config(page_title='My Streamlit App', layout='wide', initial_sidebar_state='expanded')
+# Streamlit에서 암호 입력
+password = st.text_input("파일 비밀번호를 입력하세요:", type="password")
 
-# 파일 URL
-FILE_URL = 'https://yourhost.com/yourfile.xlsx'  # Excel 파일의 URL을 입력하세요
-
-# 비밀번호 입력
-password = st.sidebar.text_input("파일 비밀번호를 입력하세요:", type="password")
+def load_encrypted_data(password):
+    # Fernet 키 생성 (이 키는 별도로 저장하고 관리해야 합니다)
+    key = Fernet.generate_key()
+    cipher_suite = Fernet(key)
+    
+    # GitHub에서 암호화된 파일 다운로드
+    encrypted_file = 'https://raw.githubusercontent.com/username/repo/main/datafile.csv.encrypted'
+    encrypted_data = pd.read_csv(encrypted_file, header=None).values[0][0]
+    
+    # 데이터 복호화 시도
+    try:
+        decrypted_data = cipher_suite.decrypt(encrypted_data.encode()).decode()
+        df = pd.read_csv(pd.compat.StringIO(decrypted_data))
+        return df
+    except Exception as e:
+        st.error("비밀번호가 잘못되었습니다.")
+        return pd.DataFrame()
 
 if password:
-    # 파일을 로드하는 함수
-    def load_protected_excel(url, password):
-        try:
-            response = requests.get(url)
-            file = BytesIO(response.content)
-            return pd.read_excel(file, engine='openpyxl', password=password)
-        except Exception as e:
-            st.error(f'파일 로딩 중 오류가 발생했습니다: {e}')
-            return None
+    df = load_encrypted_data(password)
 
-    # 데이터프레임 로드
-    df = load_protected_excel(FILE_URL, password)
-
-    if df is not None:
-        st.write('파일이 성공적으로 로드되었습니다.')
-        # 데이터 처리 및 대시보드 로직 추가
-
-        # 예를 들어, 데이터프레임을 화면에 출력
-        st.dataframe(df)
 
 import streamlit as st
 import pandas as pd
