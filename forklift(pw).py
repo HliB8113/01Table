@@ -1,4 +1,7 @@
-
+import streamlit as st
+import pandas as pd
+import plotly.graph_objs as go
+from plotly.subplots import make_subplot
 from openpyxl import load_workbook
 import requests
 import io
@@ -25,12 +28,6 @@ if password:
         st.write("파일 로드 성공!", df.head())  # 파일이 성공적으로 로드됐다는 메시지와 함께 데이터의 첫 부분을 보여줍니다.
     except Exception as e:
         st.error(f"파일 로드 중 에러 발생: {e}")
-
-
-import streamlit as st
-import pandas as pd
-import plotly.graph_objs as go
-from plotly.subplots import make_subplots
 
 # Streamlit 페이지 설정
 st.set_page_config(page_title='My Streamlit App', layout='wide', initial_sidebar_state='expanded')
