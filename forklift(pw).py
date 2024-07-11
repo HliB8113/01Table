@@ -95,7 +95,8 @@ if input_password:
         )
 
         st.plotly_chart(fig, use_container_width=True)
-
+        st.write(df.head())
+        
     except Exception as e:
         st.error(f"파일 로드 중 에러 발생: {e}")
 else:
