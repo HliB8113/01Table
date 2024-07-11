@@ -9,17 +9,18 @@ import io
 # Streamlit 페이지 설정
 st.set_page_config(page_title='My Streamlit App', layout='wide', initial_sidebar_state='expanded')
 
-# 파일 URL과 암호 입력 받기
+# 파일 URL과 사용자에게 비밀번호 입력 받기
 st.sidebar.title("파일 설정")
 file_url = "https://github.com/HliB8113/01Table/raw/main/%EC%A7%80%EA%B2%8C%EC%B0%A8%20%EC%97%91%EC%85%80.xlsx"
-password = st.sidebar.text_input("파일 암호 입력:", type="password")
+input_password = st.sidebar.text_input("파일 암호 입력:", type="password")
 
 # 파일 다운로드 및 로드
-if password:
+if input_password:
     try:
+        # 파일을 요청하고 비밀번호로 엑셀 파일 열기
         response = requests.get(file_url)
         bytes_io = io.BytesIO(response.content)
-        workbook = load_workbook(filename=bytes_io, read_only=True, password=password)
+        workbook = load_workbook(filename=bytes_io, read_only=True, password=input_password)
         sheet = workbook.active
         data = sheet.values
         columns = next(data)[0:]
@@ -28,8 +29,10 @@ if password:
         st.write("파일 로드 성공!", df.head())
     except Exception as e:
         st.error(f"파일 로드 중 에러 발생: {e}")
+else:
+    st.warning("엑셀 파일을 로드하려면 비밀번호를 입력해야 합니다.")
 
-# 파일 업로드 및 데이터 처리
+# Streamlit 사이드바 설정
 uploaded_file = st.sidebar.file_uploader("파일을 업로드하세요.", type=["csv"])
 if uploaded_file is not None:
     df = pd.read_csv(uploaded_file)
@@ -43,7 +46,7 @@ if uploaded_file is not None:
     analysis_type = st.sidebar.radio("분석 유형 선택:", ('운영 대수', '운영 횟수'))
     selected_department = st.sidebar.selectbox('부서 선택:', ['전체'] + df['부서'].dropna().unique().tolist())
     selected_forklift_class = st.sidebar.selectbox('차대 분류 선택:', ['전체'] + df['차대 분류'].dropna().unique().tolist())
-    graph_height = st.sidebar.slider('Select graph height', 300, 1500, 900)
+    graph_height = st.sidebar.slider('그래프 높이 선택', 300, 1500, 900)
 
     # 피벗 테이블 생성 및 시각화
     def generate_pivot(department, forklift_class):
