@@ -1,4 +1,3 @@
-# 파일 다운로드 및 로드
 import streamlit as st
 import pandas as pd
 import plotly.graph_objs as go
@@ -22,22 +21,13 @@ if input_password:
         # 파일을 요청하고 비밀번호로 엑셀 파일 열기
         response = requests.get(file_url)
         bytes_io = io.BytesIO(response.content)
-
-        # openpyxl을 사용하여 비밀번호로 보호된 파일 열기
         workbook = load_workbook(filename=bytes_io, read_only=True, password=input_password)
         sheet = workbook.active
         data = sheet.values
         columns = next(data)[0:]
         df = pd.DataFrame(data, columns=columns)
 
-        st.write("파일 로드 성공!", df.head())
-    except Exception as e:
-        st.error(f"파일 로드 중 에러 발생: {e}")
-else:
-    st.warning("엑셀 파일을 로드하려면 비밀번호를 입력해야 합니다.")
-
-
-        # 데이터 클린징
+        # 데이터 전처리
         df['시간대'] = pd.to_datetime(df['시간대'], format='%H:%M').dt.strftime('%H:%M')
         df['시작 날짜'] = pd.to_datetime(df['시작 날짜'])
         df = df[df['시작 날짜'].dt.month == 5]  # 5월 데이터만 선택
@@ -97,7 +87,7 @@ else:
             height=graph_height
         )
 
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True
     except Exception as e:
         st.error(f"파일 로드 중 에러 발생: {e}")
 else:
