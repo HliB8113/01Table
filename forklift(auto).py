@@ -8,9 +8,11 @@ st.set_page_config(page_title='My Streamlit App', layout='wide', initial_sidebar
 
 # Streamlit 사이드바 설정
 with st.sidebar:
-    uploaded_file = st.file_uploader("파일을 업로드하세요.", type=["csv"])
+    # 파일 업로더에서 CSV 대신 XLSX 파일을 업로드 받도록 수정
+    uploaded_file = st.file_uploader("파일을 업로드하세요.", type=["xlsx"])
     if uploaded_file is not None:
-        df = pd.read_csv(uploaded_file)
+        # read_csv 대신 read_excel 함수 사용
+        df = pd.read_excel(uploaded_file, engine='openpyxl')
         df['시간대'] = pd.to_datetime(df['시간대'], format='%H:%M').dt.strftime('%H:%M')
 
         # 날짜를 일자로 파싱하고 특정 월(예: 5월) 데이터만 필터링
