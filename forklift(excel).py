@@ -8,7 +8,7 @@ st.set_page_config(page_title='My Streamlit App', layout='wide', initial_sidebar
 
 # Streamlit 사이드바 설정
 with st.sidebar:
-    uploaded_file = st.file_uploader("파일을 업로드하세요.", type=["xlsx", "xls"])
+    uploaded_file = st.file_uploader("파일을 업로드하세요.", type=["xlsx"])
     if uploaded_file is not None:
         df = pd.read_excel(uploaded_file)
         df['시간대'] = pd.to_datetime(df['시간대'], format='%H:%M').dt.strftime('%H:%M')
@@ -24,7 +24,7 @@ with st.sidebar:
         analysis_type = st.radio("분석 유형 선택:", ('운영 대수', '운영 횟수'))
         selected_department = st.selectbox('부서 선택:', ['전체'] + df['부서'].dropna().unique().tolist())
         selected_forklift_class = st.selectbox('차대 분류 선택:', ['전체'] + df['차대 분류'].dropna().unique().tolist())
-        graph_height = st.slider('그래프 높이 선택', 300, 1500, 900)
+        graph_height = st.slider('Select graph height', 300, 1500, 900)
 
 # 변수 초기화
 title = "분석 대기 중..."
