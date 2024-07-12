@@ -9,7 +9,7 @@ st.set_page_config(page_title='My Streamlit App', layout='wide', initial_sidebar
 # Streamlit 사이드바 설정
 with st.sidebar:
     # 엑셀 파일 업로더
-    uploaded_file = st.file_uploader("파일을 업로드하세요.", type=["xlsx"])
+    uploaded_file = st.file_uploader("파일을 업로드하세요.", type=["CSV"])
     if uploaded_file is not None:
         df = pd.read_excel(uploaded_file)
         st.write(df.head())
