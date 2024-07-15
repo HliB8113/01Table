@@ -11,6 +11,17 @@ with st.sidebar:
     uploaded_file = st.file_uploader("파일을 업로드하세요.", type=["csv"])
     if uploaded_file is not None:
         df = pd.read_csv(uploaded_file)
+
+        # 파일 내용 확인 (디버깅을 위해)
+        st.write("파일의 첫 5줄을 확인하세요:", df.head())
+
+        # 시간대를 시간 형식으로 변환
+        try:
+            df['시간대'] = pd.to_datetime(df['시간대'], format='%H:%M', errors='coerce').dt.strftime('%H:%M')
+        except ValueError:
+            df['시간대'] = pd.to_datetime(df['시간대'], format='%H:%M:%S', errors='coerce').dt.strftime('%H:%M')
+
+        # 시작 날짜를 날짜 형식으로 변환
         df['시작 날짜'] = pd.to_datetime(df['시작 날짜'])
 
         # 5월, 6월, 7월 데이터만 필터링
@@ -19,25 +30,17 @@ with st.sidebar:
         df = df.sort_values(by=['시작 날짜', '시간대'])
         df.dropna(subset=['부서', '차대 분류'], inplace=True)
 
-        # 시간대를 시간 형식으로 변환
-        try:
-            df['시간대'] = pd.to_datetime(df['시간대'], format='%H:%M', errors='coerce').dt.strftime('%H:%M')
-        except ValueError:
-            df['시간대'] = pd.to_datetime(df['시간대'], format='%H:%M:%S', errors='coerce').dt.strftime('%H:%M')
-
-        # 사이드바에 날짜 선택 드롭다운 추가
-        unique_dates = df['시작 날짜'].dropna().unique()
-        selected_date = st.selectbox('시작 날짜 선택:', unique_dates)
-
         analysis_type = st.radio("분석 유형 선택:", ('운영 대수', '운영 횟수'))
         selected_department = st.selectbox('부서 선택:', ['전체'] + df['부서'].dropna().unique().tolist())
         selected_forklift_class = st.selectbox('차대 분류 선택:', ['전체'] + df['차대 분류'].dropna().unique().tolist())
         graph_height = st.slider('Select graph height', 300, 1500, 900)
 
+# 변수 초기화
+title = "분석 대기 중..."
+index_name = "데이터 선택"
+
 # 메인 페이지 설정
 if uploaded_file is not None and 'df' in locals():
-    df = df[df['시작 날짜'] == selected_date]  # 선택한 날짜에 해당하는 데이터 필터링
-    
     def generate_pivot(department, forklift_class):
         filtered_df = df.copy()
         if department != '전체':
@@ -66,7 +69,7 @@ if uploaded_file is not None and 'df' in locals():
     heatmap = go.Heatmap(
         z=pivot_table.values,
         x=pivot_table.columns,
-        y=[date[5:] for date in pivot_table.index],  # MM-DD 형식으로 날짜 표시
+        y=pivot_table.index,
         colorscale=[[0, 'white'], [1, 'purple']],
         hoverinfo='text',
         text=[[f' {analysis_type} {int(val)}번' for val in row] for row in pivot_table.values]
