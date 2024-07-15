@@ -72,15 +72,15 @@ if uploaded_file is not None and 'df' in locals():
         text=[[f' {analysis_type} {int(val)}번' for val in row] for row in pivot_table.values]
     )
     fig.add_trace(heatmap)
-    fig.update_layout(
+        fig.update_layout(
         title=title,
         xaxis=dict(title='시간대', fixedrange=True),
         yaxis=dict(title=index_name),
         plot_bgcolor='white',
         paper_bgcolor='white',
-        margin=dict(l 50, r 50, t 100, b 50),
-        width 900,  # 고정된 너비
-        height graph_height  # 조정 가능한 높이
+        margin=dict(l=50, r=50, t=100, b=50),
+        width=900,  # 고정된 너비
+        height=graph_height  # 조정 가능한 높이
     )
 
     # Streamlit을 통해 플롯 보여주기
