@@ -12,17 +12,21 @@ with st.sidebar:
     if uploaded_file is not None:
         df = pd.read_csv(uploaded_file)
 
+        # 파일 내용 확인 (디버깅을 위해)
+        st.write("파일의 첫 5줄을 확인하세요:", df.head())
+
         # 시간대를 시간 형식으로 변환
-        df['시간대'] = pd.to_datetime(df['시간대'], format='%H:%M', errors='coerce').dt.strftime('%H:%M')
+        try:
+            df['시간대'] = pd.to_datetime(df['시간대'], format='%H:%M', errors='coerce').dt.strftime('%H:%M')
+        except ValueError:
+            df['시간대'] = pd.to_datetime(df['시간대'], format='%H:%M:%S', errors='coerce').dt.strftime('%H:%M')
 
-        # Error handling for non-parsed entries
-        if df['시간대'].isnull().any():
-            st.error("Some '시간대' entries could not be parsed. Check data format.")
-
-        # Continue with the rest of your processing
+        # 시작 날짜를 날짜 형식으로 변환
         df['시작 날짜'] = pd.to_datetime(df['시작 날짜'])
-        df = df[df['시작 날짜'].dt.month == 5]
-        df['시작 날짜'] = df['시작 날짜'].dt.strftime('%d')
+
+        # 5월, 6월, 7월 데이터만 필터링
+        df = df[df['시작 날짜'].dt.month.isin([5, 6, 7])]
+        df['시작 날짜'] = df['시작 날짜'].dt.strftime('%Y-%m-%d')  # 날짜 형식 변경
         df = df.sort_values(by=['시작 날짜', '시간대'])
         df.dropna(subset=['부서', '차대 분류'], inplace=True)
 
