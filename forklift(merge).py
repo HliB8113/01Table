@@ -12,11 +12,10 @@ with st.sidebar:
     if uploaded_file is not None:
         df = pd.read_csv(uploaded_file)
 
-        # Debugging: Check the '시간대' column format
-        st.write(df['시간대'].head())  # Display the first few entries of '시간대'
-
-        # Safely convert '시간대' to datetime and back to string
+        # 시간대를 시간 형식으로 변환
         df['시간대'] = pd.to_datetime(df['시간대'], format='%H:%M', errors='coerce').dt.strftime('%H:%M')
+
+        # Error handling for non-parsed entries
         if df['시간대'].isnull().any():
             st.error("Some '시간대' entries could not be parsed. Check data format.")
 
