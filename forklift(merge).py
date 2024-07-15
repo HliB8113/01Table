@@ -12,7 +12,7 @@ with st.sidebar:
     if uploaded_file is not None:
         df = pd.read_csv(uploaded_file)
         df['시작 날짜'] = pd.to_datetime(df['시작 날짜'])
-        
+
         # 5월, 6월, 7월 데이터만 필터링
         df = df[df['시작 날짜'].dt.month.isin([5, 6, 7])]
         df['시작 날짜'] = df['시작 날짜'].dt.strftime('%Y-%m-%d')  # 날짜 형식 변경
@@ -59,29 +59,29 @@ if uploaded_file is not None and 'df' in locals():
         pivot_table = filtered_df.pivot_table(index=index_name, columns='시간대', values=value_name, aggfunc=agg_func).fillna(0)
         return pivot_table, title, index_name
 
-        pivot_table, title, index_name = generate_pivot(selected_department, selected_forklift_class)
-    
-        # Heatmap 생성
-        fig = make_subplots(rows=1, cols=1)
-        heatmap = go.Heatmap(
-            z=pivot_table.values,
-            x=pivot_table.columns,
-            y=[date[5:] for date in pivot_table.index],  # MM-DD 형식으로 날짜 표시
-            colorscale=[[0, 'white'], [1, 'purple']],
-            hoverinfo='text',
-            text=[[f' {analysis_type} {int(val)}번' for val in row] for row in pivot_table.values]
-        )
-        fig.add_trace(heatmap)
-            fig.update_layout(
-            title=title,
-            xaxis=dict(title='시간대', fixedrange=True),
-            yaxis=dict(title=index_name),
-            plot_bgcolor='white',
-            paper_bgcolor='white',
-            margin=dict(l=50, r=50, t=100, b=50),
-            width=900,  # 고정된 너비
-            height=graph_height  # 조정 가능한 높이
-        )
-    
-        # Streamlit을 통해 플롯 보여주기
-        st.plotly_chart(fig, use_container_width=True)
+    pivot_table, title, index_name = generate_pivot(selected_department, selected_forklift_class)
+
+    # Heatmap 생성
+    fig = make_subplots(rows=1, cols=1)
+    heatmap = go.Heatmap(
+        z=pivot_table.values,
+        x=pivot_table.columns,
+        y=[date[5:] for date in pivot_table.index],  # MM-DD 형식으로 날짜 표시
+        colorscale=[[0, 'white'], [1, 'purple']],
+        hoverinfo='text',
+        text=[[f'{analysis_type} {int(val)}번' for val in row] for row in pivot_table.values]
+    )
+    fig.add_trace(heatmap)
+    fig.update_layout(
+        title=title,
+        xaxis=dict(title='시간대', fixedrange=True),
+        yaxis=dict(title=index_name),
+        plot_bgcolor='white',
+        paper_bgcolor='white',
+        margin=dict(l=50, r=50, t=100, b=50),
+        width=900,  # 고정된 너비
+        height=graph_height  # 조정 가능한 높이
+    )
+
+    # Streamlit을 통해 플롯 보여주기
+    st.plotly_chart(fig, use_container_width=True)
