@@ -69,7 +69,7 @@ if uploaded_file is not None and 'df' in locals():
         y=[date[5:] for date in pivot_table.index],  # MM-DD 형식으로 날짜 표시
         colorscale=[[0, 'white'], [1, 'purple']],
         hoverinfo='text',
-        text=[[f'{analysis_type} {int(val)}번' for val in row] for row in pivot_table.values]
+        text=[[f' {analysis_type} {int(val)}번' for val in row] for row in pivot_table.values]
     )
     fig.add_trace(heatmap)
     fig.update_layout(
