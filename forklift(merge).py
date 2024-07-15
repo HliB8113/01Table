@@ -11,13 +11,19 @@ with st.sidebar:
     uploaded_file = st.file_uploader("파일을 업로드하세요.", type=["csv"])
     if uploaded_file is not None:
         df = pd.read_csv(uploaded_file)
-        df['시간대'] = pd.to_datetime(df['시간대'], format='%H:%M').dt.strftime('%H:%M')
 
-        # 날짜를 일자로 파싱하고 특정 월(예: 5월) 데이터만 필터링
+        # Debugging: Check the '시간대' column format
+        st.write(df['시간대'].head())  # Display the first few entries of '시간대'
+
+        # Safely convert '시간대' to datetime and back to string
+        df['시간대'] = pd.to_datetime(df['시간대'], format='%H:%M', errors='coerce').dt.strftime('%H:%M')
+        if df['시간대'].isnull().any():
+            st.error("Some '시간대' entries could not be parsed. Check data format.")
+
+        # Continue with the rest of your processing
         df['시작 날짜'] = pd.to_datetime(df['시작 날짜'])
-        df = df[df['시작 날짜'].dt.month == 5]  # 5월 데이터만 선택
-        df['시작 날짜'] = df['시작 날짜'].dt.strftime('%d')  # 일자 형식으로 변경
-
+        df = df[df['시작 날짜'].dt.month == 5]
+        df['시작 날짜'] = df['시작 날짜'].dt.strftime('%d')
         df = df.sort_values(by=['시작 날짜', '시간대'])
         df.dropna(subset=['부서', '차대 분류'], inplace=True)
 
