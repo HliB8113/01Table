@@ -12,6 +12,9 @@ with st.sidebar:
     if uploaded_file is not None:
         df = pd.read_csv(uploaded_file)
 
+        # 파일 내용 확인 (디버깅을 위해)
+        st.write("파일의 첫 5줄을 확인하세요:", df.head())
+
         # 시간대를 시간 형식으로 변환
         try:
             df['시간대'] = pd.to_datetime(df['시간대'], format='%H:%M', errors='coerce').dt.strftime('%H:%M')
@@ -20,9 +23,10 @@ with st.sidebar:
 
         # 시작 날짜를 날짜 형식으로 변환
         df['시작 날짜'] = pd.to_datetime(df['시작 날짜'])
-
-        # 월 정보 추가
         df['월'] = df['시작 날짜'].dt.month
+
+        # 12월 데이터 제외
+        df = df[df['월'] != 12]
 
         # 필터링 가능한 드롭다운 메뉴
         analysis_type = st.radio("분석 유형 선택:", ('운영 대수', '운영 횟수'))
@@ -67,13 +71,14 @@ if uploaded_file is not None and 'df' in locals():
 
     # Heatmap 생성
     fig = make_subplots(rows=1, cols=1)
+    tooltip_texts = [[f'{analysis_type} {int(val)}{"대" if analysis_type == "운영 대수" else "번"}' for val in row] for row in pivot_table.values]
     heatmap = go.Heatmap(
         z=pivot_table.values,
         x=pivot_table.columns,
         y=pivot_table.index,
         colorscale=[[0, 'white'], [1, 'purple']],
         hoverinfo='text',
-        text=[[f'운영 대수 {int(val)}대' if analysis_type == '운영 대수' else f'운영 횟수 {int(val)}번' for val in row] for row in pivot_table.values]
+        text=tooltip_texts
     )
     fig.add_trace(heatmap)
     fig.update_layout(
