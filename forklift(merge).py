@@ -12,9 +12,6 @@ with st.sidebar:
     if uploaded_file is not None:
         df = pd.read_csv(uploaded_file)
 
-        # 파일 내용 확인 (디버깅을 위해)
-        st.write("파일의 첫 5줄을 확인하세요:", df.head())
-
         # 시간대를 시간 형식으로 변환
         try:
             df['시간대'] = pd.to_datetime(df['시간대'], format='%H:%M', errors='coerce').dt.strftime('%H:%M')
