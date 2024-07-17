@@ -91,7 +91,7 @@ if uploaded_file is not None and 'df' in locals():
         yaxis=dict(title=index_name),
         plot_bgcolor='white',
         paper_bgcolor='white',
-        margin=dict(l=50, r=50, t100, b=50),
+        margin=dict(l=50, r=50, t=100, b=50),
         width=900,  # 고정된 너비
         height=graph_height  # 조정 가능한 높이
     )
