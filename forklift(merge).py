@@ -18,26 +18,22 @@ with st.sidebar:
         # 시간대를 시간 형식으로 변환
         df['시간대'] = pd.to_datetime(df['시간대'], format='%H:%M', errors='coerce').dt.strftime('%H:%M')
 
-        # 시작 날짜를 날짜 형식으로 변환 및 월 열 추가
+        # 시작 날짜를 날짜 형식으로 변환
         df['시작 날짜'] = pd.to_datetime(df['시작 날짜'])
+
+        # 월 열 추가
         df['월'] = df['시작 날짜'].dt.month
 
-        # 분석 유형 선택
         analysis_type = st.radio("분석 유형 선택:", ('운영 대수', '운영 횟수'))
-        
-        # 월 드롭다운 추가
         selected_month = st.selectbox('월 선택:', ['전체'] + sorted(df['월'].unique().tolist()))
-
-        # 차대 분류 선택
         selected_forklift_class = st.selectbox('차대 분류 선택:', ['전체'] + df['차대 분류'].dropna().unique().tolist())
-        
-        # 부서 선택
         selected_department = st.selectbox('부서 선택:', ['전체'] + df['부서'].dropna().unique().tolist())
-        
-        # 공정 선택
         selected_process = st.selectbox('공정 선택:', ['전체'] + df['공정'].dropna().unique().tolist())
-
         graph_height = st.slider('Select graph height', 300, 1500, 900)
+
+# 변수 초기화
+title = "분석 대기 중..."
+index_name = "데이터 선택"
 
 # 메인 페이지 설정
 if uploaded_file is not None and 'df' in locals():
@@ -57,13 +53,13 @@ if uploaded_file is not None and 'df' in locals():
             value_name = '차대 코드'
             agg_func = 'nunique'
             title = '지게차 일자별 운영 대수'
-            filtered_df['시작 날짜'] = filtered_df['시작 날짜'].dt.strftime('%m-%d')  # 날짜 형식 변경
+            filtered_df[index_name] = filtered_df[index_name].dt.strftime('%m-%d')
         else:
             index_name = '차대 코드'
             value_name = '시작 날짜'
             agg_func = 'count'
             title = '지게차 시간대별 운영 횟수'
-            filtered_df['시작 날짜'] = filtered_df['시작 날짜'].dt.strftime('%Y-%m-%d')  # 날짜 형식 유지
+            filtered_df[value_name] = filtered_df[value_name].dt.strftime('%m-%d')
 
         pivot_table = filtered_df.pivot_table(index=index_name, columns='시간대', values=value_name, aggfunc=agg_func).fillna(0)
         return pivot_table, title, index_name
@@ -78,7 +74,7 @@ if uploaded_file is not None and 'df' in locals():
         y=pivot_table.index,
         colorscale=[[0, 'white'], [1, 'purple']],
         hoverinfo='text',
-        text=[[f' {analysis_type} {int(val)}대' if analysis_type == '운영 대수' else f' {analysis_type} {int(val)}번' for val in row] for row in pivot_table.values]
+        text=[[f' {analysis_type} {int(val)}번' for val in row] for row in pivot_table.values]
     )
     fig.add_trace(heatmap)
     fig.update_layout(
