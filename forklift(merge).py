@@ -20,7 +20,7 @@ with st.sidebar:
 
         # 시작 날짜를 날짜 형식으로 변환 및 '월-일' 형식으로 조정
         df['시작 날짜'] = pd.to_datetime(df['시작 날짜']).dt.strftime('%m-%d')
-        df['월'] = pd.to_datetime(df['시작 날짜'], format='%m-%d').dt.month
+        df['월'] = pd.to_datetime('2000-' + df['시작 날짜']).dt.month  # '2000' 연도 추가
 
         # 12월 데이터 제외
         df = df[df['월'] != 12]
@@ -84,7 +84,7 @@ if uploaded_file is not None and 'df' in locals():
         yaxis=dict(title=index_name),
         plot_bgcolor='white',
         paper_bgcolor='white',
-        margin=dict(l = 50, r = 50, t = 100, b = 50),
+        margin=dict(l=50, r=50, t=100, b=50),
         width=900,
         height=graph_height
     )
