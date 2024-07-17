@@ -76,7 +76,7 @@ if uploaded_file is not None and 'df' in locals():
         y=pivot_table.index,
         colorscale=[[0, 'white'], [1, 'purple']],
         hoverinfo='text',
-        text=[[f' {analysis_type} {int(val)}번' for val in row] for row in pivot_table.values]
+        text=[[f' {analysis_type} {int(val)}대(번)' for val in row] for row in pivot_table.values]
     )
     fig.add_trace(heatmap)
     fig.update_layout(
