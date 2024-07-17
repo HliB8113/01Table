@@ -53,11 +53,16 @@ if uploaded_file is not None and 'df' in locals():
         if forklift_class != '전체':
             filtered_df = filtered_df[filtered_df['차대 분류'] == forklift_class]
 
+        # 시간대 모든 단위 보장
+        all_times = pd.date_range("00:00", "23:40", freq="20min").strftime('%H:%M').tolist()
+        filtered_df['시간대'] = pd.Categorical(filtered_df['시간대'], categories=all_times, ordered=True)
+
         if analysis_type == '운영 대수':
             index_name = '시작 날짜'
             value_name = '차대 코드'
             agg_func = 'nunique'
             title = '지게차 일자별 운영 대수'
+            filtered_df['시작 날짜'] = filtered_df['시작 날짜'].dt.strftime('%m-%d')
         else:
             index_name = '차대 코드'
             value_name = '시작 날짜'
