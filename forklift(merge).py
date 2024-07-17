@@ -17,32 +17,22 @@ with st.sidebar:
         st.write("파일의 첫 5줄을 확인하세요:", df.head())
 
         # 시간대를 시간 형식으로 변환
-        try:
-            df['시간대'] = pd.to_datetime(df['시간대'], format='%H:%M', errors='coerce').dt.strftime('%H:%M')
-        except ValueError:
-            df['시간대'] = pd.to_datetime(df['시간대'], format='%H:%M:%S', errors='coerce').dt.strftime('%H:%M')
+        df['시간대'] = pd.to_datetime(df['시간대'], format='%H:%M', errors='coerce').dt.strftime('%H:%M')
 
-        # 시작 날짜를 날짜 형식으로 변환
+        # 시작 날짜를 날짜 형식으로 변환 및 월 추출
         df['시작 날짜'] = pd.to_datetime(df['시작 날짜'])
         df['월'] = df['시작 날짜'].dt.month
 
         # 12월 데이터 제외
         df = df[df['월'] != 12]
 
-        # 모든 시간대를 생성
-        all_times = [f"{hour:02}:00" for hour in range(24)]  # '00:00'부터 '23:00'까지 시간 생성
-
-        # 필터링 가능한 드롭다운 메뉴
+        # 필터링 가능한 드롭다운 메뉴 생성
         analysis_type = st.radio("분석 유형 선택:", ('운영 대수', '운영 횟수'))
         selected_month = st.selectbox('월 선택:', ['전체'] + sorted(df['월'].dropna().unique().tolist()))
         selected_department = st.selectbox('부서 선택:', ['전체'] + sorted(df['부서'].dropna().unique().tolist()))
         selected_process = st.selectbox('공정 선택:', ['전체'] + sorted(df['공정'].dropna().unique().tolist()))
         selected_forklift_class = st.selectbox('차대 분류 선택:', ['전체'] + sorted(df['차대 분류'].dropna().unique().tolist()))
         graph_height = st.slider('그래프 높이 선택', 300, 1500, 900)
-
-# 변수 초기화
-title = "분석 대기 중..."
-index_name = "데이터 선택"
 
 # 메인 페이지 설정
 if uploaded_file is not None and 'df' in locals():
@@ -57,25 +47,18 @@ if uploaded_file is not None and 'df' in locals():
         if forklift_class != '전체':
             filtered_df = filtered_df[filtered_df['차대 분류'] == forklift_class]
 
-        if analysis_type == '운영 대수':
-            index_name = '시작 날짜'
-            value_name = '차대 코드'
-            agg_func = 'nunique'
-            title = '지게차 일자별 운영 대수'
-        else:
-            index_name = '차대 코드'
-            value_name = '시작 날짜'
-            agg_func = 'count'
-            title = '지게차 시간대별 운영 횟수'
+        # 피벗 테이블 생성
+        pivot_table = filtered_df.pivot_table(index='시작 날짜', columns='시간대', values='차대 코드', aggfunc='nunique' if analysis_type == '운영 대수' else 'count').fillna(0)
 
-        pivot_table = filtered_df.pivot_table(index=index_name, columns='시간대', values=value_name, aggfunc=agg_func).reindex(columns=all_times, fill_value=0)
-        return pivot_table, title, index_name
+        # 툴팁 텍스트 생성
+        tooltip_texts = [[f'{analysis_type} {int(val)}{"대" if analysis_type == "운영 대수" and val != 0 else "번"}' for val in row] for row in pivot_table.values]
+        
+        return pivot_table, '지게차 일자별 운영 대수' if analysis_type == '운영 대수' else '지게차 시간대별 운영 횟수'
 
-    pivot_table, title, index_name = generate_pivot(selected_month, selected_department, selected_process, selected_forklift_class)
+    pivot_table, title = generate_pivot(selected_month, selected_department, selected_process, selected_forklift_class)
 
     # Heatmap 생성
     fig = make_subplots(rows=1, cols=1)
-    tooltip_texts = [[f'{analysis_type} {int(val)}{"대" if analysis_type == "운영 대수" else "번"}' for val in row] for row in pivot_table.values]
     heatmap = go.Heatmap(
         z=pivot_table.values,
         x=pivot_table.columns,
@@ -88,12 +71,11 @@ if uploaded_file is not None and 'df' in locals():
     fig.update_layout(
         title=title,
         xaxis=dict(title='시간대', fixedrange=True),
-        yaxis=dict(title=index_name),
+        yaxis=dict(title='시작 날짜'),
         plot_bgcolor='white',
         paper_bgcolor='white',
-        margin=dict(l=50, r=50, t=100, b=50),
-        width=900,  # 고정된 너비
-        height=graph_height  # 조정 가능한 높이
+        margin=dict(l=50, r=50, t100, b=50),
+        height=graph_height
     )
 
     # Streamlit을 통해 플롯 보여주기
