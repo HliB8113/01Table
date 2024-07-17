@@ -24,11 +24,21 @@ with st.sidebar:
         # 월 열 추가
         df['월'] = df['시작 날짜'].dt.month
 
-        analysis_type = st.radio("분석 유형 선택:", ('운영 대수', '운영 횟수'))
-        selected_month = st.selectbox('월 선택:', ['전체'] + sorted(df['월'].unique().tolist()))
-        selected_forklift_class = st.selectbox('차대 분류 선택:', ['전체'] + df['차대 분류'].dropna().unique().tolist())
-        selected_department = st.selectbox('부서 선택:', ['전체'] + df['부서'].dropna().unique().tolist())
+        # 5월, 6월, 7월 데이터만 필터링
+        df = df[df['시작 날짜'].dt.month.isin([5, 6, 7])]
+        df['시작 날짜'] = df['시작 날짜'].dt.strftime('%Y-%m-%d')  # 날짜 형식 변경
+        df = df.sort_values(by=['시작 날짜', '시간대'])
+        df.dropna(subset=['부서', '차대 분류'], inplace=True)
+
+        # 공정 드롭다운 추가
         selected_process = st.selectbox('공정 선택:', ['전체'] + df['공정'].dropna().unique().tolist())
+
+        # 월 드롭다운 추가
+        selected_month = st.selectbox('월 선택:', ['전체'] + sorted(df['월'].unique().tolist()))
+
+        analysis_type = st.radio("분석 유형 선택:", ('운영 대수', '운영 횟수'))
+        selected_department = st.selectbox('부서 선택:', ['전체'] + df['부서'].dropna().unique().tolist())
+        selected_forklift_class = st.selectbox('차대 분류 선택:', ['전체'] + df['차대 분류'].dropna().unique().tolist())
         graph_height = st.slider('Select graph height', 300, 1500, 900)
 
 # 변수 초기화
@@ -53,13 +63,11 @@ if uploaded_file is not None and 'df' in locals():
             value_name = '차대 코드'
             agg_func = 'nunique'
             title = '지게차 일자별 운영 대수'
-            filtered_df[index_name] = filtered_df[index_name].dt.strftime('%m-%d')
         else:
             index_name = '차대 코드'
             value_name = '시작 날짜'
             agg_func = 'count'
             title = '지게차 시간대별 운영 횟수'
-            filtered_df[value_name] = filtered_df[value_name].dt.strftime('%m-%d')
 
         pivot_table = filtered_df.pivot_table(index=index_name, columns='시간대', values=value_name, aggfunc=agg_func).fillna(0)
         return pivot_table, title, index_name
