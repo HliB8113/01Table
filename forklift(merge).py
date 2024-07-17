@@ -16,14 +16,11 @@ with st.sidebar:
         st.write("파일의 첫 5줄을 확인하세요:", df.head())
 
         # 시간대를 시간 형식으로 변환
-        try:
-            df['시간대'] = pd.to_datetime(df['시간대'], format='%H:%M', errors='coerce').dt.strftime('%H:%M')
-        except ValueError:
-            df['시간대'] = pd.to_datetime(df['시간대'], format='%H:%M:%S', errors='coerce').dt.strftime('%H:%M')
+        df['시간대'] = pd.to_datetime(df['시간대'], format='%H:%M', errors='coerce').dt.strftime('%H:%M')
 
-        # 시작 날짜를 날짜 형식으로 변환
-        df['시작 날짜'] = pd.to_datetime(df['시작 날짜'])
-        df['월'] = df['시작 날짜'].dt.month
+        # 시작 날짜를 날짜 형식으로 변환 및 '월-일' 형식으로 조정
+        df['시작 날짜'] = pd.to_datetime(df['시작 날짜']).dt.strftime('%m-%d')
+        df['월'] = pd.to_datetime(df['시작 날짜'], format='%m-%d').dt.month
 
         # 12월 데이터 제외
         df = df[df['월'] != 12]
@@ -35,10 +32,6 @@ with st.sidebar:
         selected_process = st.selectbox('공정 선택:', ['전체'] + sorted(df['공정'].dropna().unique().tolist()))
         selected_forklift_class = st.selectbox('차대 분류 선택:', ['전체'] + sorted(df['차대 분류'].dropna().unique().tolist()))
         graph_height = st.slider('그래프 높이 선택', 300, 1500, 900)
-
-# 변수 초기화
-title = "분석 대기 중..."
-index_name = "데이터 선택"
 
 # 메인 페이지 설정
 if uploaded_file is not None and 'df' in locals():
@@ -62,7 +55,6 @@ if uploaded_file is not None and 'df' in locals():
             value_name = '차대 코드'
             agg_func = 'nunique'
             title = '지게차 일자별 운영 대수'
-            filtered_df['시작 날짜'] = filtered_df['시작 날짜'].dt.strftime('%m-%d')
         else:
             index_name = '차대 코드'
             value_name = '시작 날짜'
@@ -92,9 +84,9 @@ if uploaded_file is not None and 'df' in locals():
         yaxis=dict(title=index_name),
         plot_bgcolor='white',
         paper_bgcolor='white',
-        margin=dict(l=50, r=50, t=100, b=50),
-        width=900,  # 고정된 너비
-        height=graph_height  # 조정 가능한 높이
+        margin=dict(l 50, r 50, t 100, b 50),
+        width=900,
+        height=graph_height
     )
 
     # Streamlit을 통해 플롯 보여주기
