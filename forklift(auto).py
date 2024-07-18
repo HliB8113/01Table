@@ -7,7 +7,7 @@ from plotly.subplots import make_subplots
 st.set_page_config(page_title='My Streamlit App', layout='wide', initial_sidebar_state='expanded')
 
 # CSV 파일 URL
-csv_url = "https://raw.githubusercontent.com/HliB8113/01Table/main/fl.csv"
+csv_url = "https://github.com/HliB8113/01Table/blob/main/fl.csv"
 
 # 데이터 불러오기
 @st.cache_data
