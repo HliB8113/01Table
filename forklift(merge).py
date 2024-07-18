@@ -31,6 +31,7 @@ with st.sidebar:
         selected_department = st.selectbox('부서 선택:', ['전체'] + sorted(df['부서'].dropna().unique().tolist()))
         selected_process = st.selectbox('공정 선택:', ['전체'] + sorted(df['공정'].dropna().unique().tolist()))
         selected_forklift_class = st.selectbox('차대 분류 선택:', ['전체'] + sorted(df['차대 분류'].dropna().unique().tolist()))
+        selected_workplace = st.selectbox('작업 장소 선택:', ['전체'] + sorted(df['작업 장소'].dropna().unique().tolist()))
         graph_height = st.slider('그래프 높이 선택', 300, 1500, 900)
 
 # 변수 초기화
@@ -49,6 +50,8 @@ if uploaded_file is not None and 'df' in locals():
             filtered_df = filtered_df[filtered_df['공정'] == process]
         if forklift_class != '전체':
             filtered_df = filtered_df[filtered_df['차대 분류'] == forklift_class]
+        if workplace != '전체':
+            filtered_df = filtered_df[filtered_df['작업 장소'] == workplace]
 
         if analysis_type == '운영 대수':
             index_name = '시작 날짜'
