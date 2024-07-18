@@ -12,9 +12,8 @@ csv_url = "https://raw.githubusercontent.com/HliB8113/01Table/main/fl.csv"
 # 데이터 불러오기
 @st.cache_data
 def load_data(url):
-    # CSV 파일의 첫 몇 줄을 읽어서 형식이 올바른지 확인
     try:
-        df = pd.read_csv(url, error_bad_lines=False, warn_bad_lines=True)
+        df = pd.read_csv(url, on_bad_lines='skip')
     except pd.errors.ParserError as e:
         st.error(f"CSV 파일을 읽는 중 오류가 발생했습니다: {e}")
         return None
