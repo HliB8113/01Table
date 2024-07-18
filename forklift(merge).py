@@ -7,6 +7,7 @@ from plotly.subplots import make_subplots
 st.set_page_config(page_title='My Streamlit App', layout='wide', initial_sidebar_state='expanded')
 
 # Streamlit 사이드바 설정
+# Streamlit 사이드바 설정
 with st.sidebar:
     uploaded_file = st.file_uploader("파일을 업로드하세요.", type=["csv"])
     if uploaded_file is not None:
