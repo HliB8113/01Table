@@ -40,7 +40,7 @@ index_name = "데이터 선택"
 
 # 메인 페이지 설정
 if uploaded_file is not None and 'df' in locals():
-    def generate_pivot(month, department, process, forklift_class):
+    def generate_pivot(month, department, process, forklift_class, workplace):
         filtered_df = df.copy()
         if month != '전체':
             filtered_df = filtered_df[filtered_df['월'] == month]
