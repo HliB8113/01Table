@@ -127,25 +127,15 @@ if uploaded_file is not None and 'df' in locals():
     )
     fig.add_trace(heatmap)
     fig.update_layout(
-        title=title,
-        annotations=[
-            go.layout.Annotation(
-                text=summary.replace('\n', '<br>'),
-                align='right',
-                showarrow=False,
-                xref='paper',
-                yref='paper',
-                x=1,
-                y=1,
-                bordercolor='black',
-                borderwidth=1
-            )
-        ],
+        title={
+            'text': title,
+            'x': 0.5
+        },
         xaxis=dict(title='시간대', fixedrange=True),
         yaxis=dict(title=index_name, categoryorder='array', categoryarray=sorted(pivot_table.index)),
         plot_bgcolor='white',
         paper_bgcolor='white',
-        margin=dict(l=50, r=50, t=100, b=50),
+        margin=dict(l=50, r=50, t=150, b=50),
         width=900,  # 고정된 너비
         height=graph_height  # 조정 가능한 높이
     )
@@ -153,6 +143,21 @@ if uploaded_file is not None and 'df' in locals():
     # 모든 '시작 날짜'를 세로축에 표시 (월일만 표시)
     if analysis_type == '운영 대수':
         fig.update_yaxes(type='category', tickmode='array', tickvals=sorted(pivot_table.index))
+
+    # 계산된 값들 추가
+    fig.add_annotation(
+        text=summary.replace('\n', '<br>'),
+        align='left',
+        showarrow=False,
+        xref='paper',
+        yref='paper',
+        x=0,
+        y=1.08,
+        bordercolor='black',
+        borderwidth=1,
+        bgcolor='white',
+        opacity=0.8
+    )
 
     # Streamlit을 통해 플롯 보여주기
     st.plotly_chart(fig, use_container_width=True)
