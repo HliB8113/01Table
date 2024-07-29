@@ -104,7 +104,7 @@ if uploaded_file is not None and 'df' in locals():
             
             summary = f"최소 운영 횟수 지게차: {min_operating_unit} {min_operating_counts}번\n"
             summary += f"최대 운영 횟수 지게차: {max_operating_unit} {max_operating_counts}번\n"
-            summary += f"최소 운영시간 지게차: {min_time_unit} {min_operating_time_formatted}\n"
+            summary += f"최소 운영 시간 지게차: {min_time_unit} {min_operating_time_formatted}\n"
             summary += f"최대 운영 시간 지게차: {max_time_unit} {max_operating_time_formatted}"
         
         pivot_table = filtered_df.pivot_table(index=index_name, columns='시간대', values=value_name, aggfunc=agg_func).fillna(0)
