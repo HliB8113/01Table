@@ -152,11 +152,12 @@ if uploaded_file is not None and 'df' in locals():
         xref='paper',
         yref='paper',
         x=0,
-        y=1.15,
+        y=1.125,
         bordercolor='black',
         borderwidth=1,
         bgcolor='white',
-        opacity=0.8
+        opacity=0.8,
+        font=dict(color='black')  # 텍스트 색상을 검은색으로 지정
     )
 
     # Streamlit을 통해 플롯 보여주기
