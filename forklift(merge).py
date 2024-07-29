@@ -59,55 +59,57 @@ if uploaded_file is not None and 'df' in locals():
             value_name = '차대 코드'
             agg_func = 'nunique'
             title = '지게차 일자별 운영 대수'
-
-            # 월 전체 운영 대수, 최소/최대 운영 대수 계산
-            total_operation = filtered_df[value_name].nunique()
+            
+            # 월 전체 운영 대수 계산
+            total_operating_units = filtered_df[value_name].nunique()
+            
+            # 월 최소 및 최대 운영 대수 계산
             daily_counts = filtered_df.groupby('시작 날짜')[value_name].nunique()
-            min_operation = daily_counts.min()
-            max_operation = daily_counts.max()
-            min_operation_date = daily_counts.idxmin()
-            max_operation_date = daily_counts.idxmax()
-
-            metrics = f"""
-            월 전체 운영 대수: {total_operation}대
-            최소 운영 대수: {min_operation_date} {min_operation}대
-            최대 운영 대수: {max_operation_date} {max_operation}대
-            """
-
+            min_operating_units = daily_counts.min()
+            max_operating_units = daily_counts.max()
+            min_operating_day = daily_counts.idxmin()
+            max_operating_day = daily_counts.idxmax()
+            
+            summary = f"월 전체 운영 대수: {total_operating_units}대\n"
+            summary += f"최소 운영 대수: {min_operating_day} {min_operating_units}대\n"
+            summary += f"최대 운영 대수: {max_operating_day} {max_operating_units}대"
         else:
             index_name = '차대 코드'
             value_name = '시작 날짜'
             agg_func = 'count'
             title = '지게차 시간대별 운영 횟수'
-
-            # 월 최소/최대 운영 횟수 및 시간 계산
-            total_counts = filtered_df.groupby(['차대 코드', '시작 날짜']).size()
-            min_operation = total_counts.min()
-            max_operation = total_counts.max()
-            min_operation_forklift = total_counts.idxmin()
-            max_operation_forklift = total_counts.idxmax()
-
-            filtered_df['운영 시간'] = pd.to_timedelta(filtered_df['운영 시간'], unit='s')
-            total_times = filtered_df.groupby(['차대 코드', '시작 날짜'])['운영 시간'].sum()
-            min_time = total_times.min()
-            max_time = total_times.max()
-            min_time_forklift = total_times.idxmin()
-            max_time_forklift = total_times.idxmax()
-
-            min_time_str = f"{min_time.components.minutes:02}:{min_time.components.seconds:02}"
-            max_time_str = f"{max_time.components.minutes:02}:{max_time.components.seconds:02}"
-
-            metrics = f"""
-            최소 운영 횟수 지게차: {min_operation_forklift} {min_operation}번
-            최대 운영 횟수 지게차: {max_operation_forklift} {max_operation}번
-            최소 운영시간 지게차: {min_time_forklift} {min_time_str}
-            최대 운영 시간 지게차: {max_time_forklift} {max_time_str}
-            """
-
+            
+            # 월 최소 및 최대 운영 횟수 계산
+            unit_counts = filtered_df.groupby(['차대 코드'])['시작 날짜'].count()
+            min_operating_counts = unit_counts.min()
+            max_operating_counts = unit_counts.max()
+            min_operating_unit = unit_counts.idxmin()
+            max_operating_unit = unit_counts.idxmax()
+            
+            # 운영 시간 계산
+            filtered_df['운영 시간(초)'] = filtered_df['운영 시간(초)'].astype(int)
+            operating_times = filtered_df.groupby('차대 코드')['운영 시간(초)'].sum()
+            min_operating_time = operating_times.min()
+            max_operating_time = operating_times.max()
+            min_time_unit = operating_times.idxmin()
+            max_time_unit = operating_times.idxmax()
+            
+            def format_time(seconds):
+                minutes, seconds = divmod(seconds, 60)
+                return f"{minutes:02}:{seconds:02}"
+            
+            min_operating_time_formatted = format_time(min_operating_time)
+            max_operating_time_formatted = format_time(max_operating_time)
+            
+            summary = f"최소 운영 횟수 지게차: {min_operating_unit} {min_operating_counts}번\n"
+            summary += f"최대 운영 횟수 지게차: {max_operating_unit} {max_operating_counts}번\n"
+            summary += f"최소 운영시간 지게차: {min_time_unit} {min_operating_time_formatted}\n"
+            summary += f"최대 운영 시간 지게차: {max_time_unit} {max_operating_time_formatted}"
+        
         pivot_table = filtered_df.pivot_table(index=index_name, columns='시간대', values=value_name, aggfunc=agg_func).fillna(0)
-        return pivot_table, title, index_name, metrics
+        return pivot_table, title, index_name, summary
 
-    pivot_table, title, index_name, metrics = generate_pivot(selected_month, selected_department, selected_process, selected_forklift_class, selected_workplace)
+    pivot_table, title, index_name, summary = generate_pivot(selected_month, selected_department, selected_process, selected_forklift_class, selected_workplace)
 
     # Heatmap 생성
     fig = make_subplots(rows=1, cols=1)
@@ -140,6 +142,6 @@ if uploaded_file is not None and 'df' in locals():
 
     # Streamlit을 통해 플롯 보여주기
     st.plotly_chart(fig, use_container_width=True)
-
+    
     # 계산된 값들 출력
-    st.markdown(metrics)
+    st.write(summary)
