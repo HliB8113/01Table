@@ -95,9 +95,10 @@ if uploaded_file is not None and 'df' in locals():
             max_time_unit = operating_times.idxmax()
             
             def format_time(seconds):
+                hours, seconds = divmod(seconds, 3600)
                 minutes, seconds = divmod(seconds, 60)
-                return f"{minutes:02}:{seconds:02}"
-            
+                return f"{hours:02}:{minutes:02}"
+
             min_operating_time_formatted = format_time(min_operating_time)
             max_operating_time_formatted = format_time(max_operating_time)
             
@@ -127,6 +128,19 @@ if uploaded_file is not None and 'df' in locals():
     fig.add_trace(heatmap)
     fig.update_layout(
         title=title,
+        annotations=[
+            go.layout.Annotation(
+                text=summary.replace('\n', '<br>'),
+                align='left',
+                showarrow=False,
+                xref='paper',
+                yref='paper',
+                x=1,
+                y=1,
+                bordercolor='black',
+                borderwidth=1
+            )
+        ],
         xaxis=dict(title='시간대', fixedrange=True),
         yaxis=dict(title=index_name, categoryorder='array', categoryarray=sorted(pivot_table.index)),
         plot_bgcolor='white',
@@ -142,6 +156,3 @@ if uploaded_file is not None and 'df' in locals():
 
     # Streamlit을 통해 플롯 보여주기
     st.plotly_chart(fig, use_container_width=True)
-    
-    # 계산된 값들 출력
-    st.write(summary)
