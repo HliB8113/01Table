@@ -78,7 +78,9 @@ if uploaded_file is not None and 'df' in locals():
         y=pivot_table.index,
         colorscale=[[0, 'white'], [1, 'purple']],
         hoverinfo='text',
-        text=tooltip_texts
+        text=tooltip_texts,
+        zmin=0,
+        zmax=pivot_table.values.max()
     )
     fig.add_trace(heatmap)
     fig.update_layout(
@@ -91,6 +93,9 @@ if uploaded_file is not None and 'df' in locals():
         width=900,  # 고정된 너비
         height=graph_height  # 조정 가능한 높이
     )
+    
+    # 모든 '시작 날짜'를 세로축에 표시
+    fig.update_yaxes(type='category', categoryorder='total ascending', tickmode='array', tickvals=pivot_table.index)
 
     # Streamlit을 통해 플롯 보여주기
     st.plotly_chart(fig, use_container_width=True)
