@@ -156,7 +156,7 @@ if uploaded_file is not None and 'df' in locals():
         bordercolor='black',
         borderwidth=1,
         bgcolor='white',
-        opacity=2,
+        opacity=0.8,
         font=dict(color='black')  # 텍스트 색상을 검은색으로 지정
     )
 
