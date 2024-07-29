@@ -37,6 +37,7 @@ with st.sidebar:
 # 변수 초기화
 title = "분석 대기 중..."
 index_name = "데이터 선택"
+summary_text = ""
 
 # 메인 페이지 설정
 if uploaded_file is not None and 'df' in locals():
@@ -59,29 +60,41 @@ if uploaded_file is not None and 'df' in locals():
             value_name = '차대 코드'
             agg_func = 'nunique'
             title = '지게차 일자별 운영 대수'
+
+            total_operations = filtered_df['차대 코드'].nunique()
+            min_operations = filtered_df.groupby('시작 날짜')['차대 코드'].nunique().min()
+            max_operations = filtered_df.groupby('시작 날짜')['차대 코드'].nunique().max()
+
+            min_date = filtered_df.groupby('시작 날짜')['차대 코드'].nunique().idxmin()
+            max_date = filtered_df.groupby('시작 날짜')['차대 코드'].nunique().idxmax()
+
+            summary_text = f"월 전체 운영 대수: {total_operations}대\n최소 운영 대수: {min_date} {min_operations}대\n최대 운영 대수: {max_date} {max_operations}대"
+        
         else:
             index_name = '차대 코드'
             value_name = '시작 날짜'
             agg_func = 'count'
             title = '지게차 시간대별 운영 횟수'
 
+            total_operations = filtered_df.groupby('차대 코드')['시작 날짜'].count()
+            min_operations = total_operations.min()
+            max_operations = total_operations.max()
+
+            min_forklift = total_operations.idxmin()
+            max_forklift = total_operations.idxmax()
+
+            min_time = filtered_df[filtered_df['차대 코드'] == min_forklift]['운영 시간'].sum()
+            max_time = filtered_df[filtered_df['차대 코드'] == max_forklift]['운영 시간'].sum()
+
+            min_time = f"{min_time // 60}:{min_time % 60:02}"
+            max_time = f"{max_time // 60}:{max_time % 60:02}"
+
+            summary_text = f"최소 운영 횟수 지게차: {min_forklift} {min_operations}번\n최대 운영 횟수 지게차: {max_forklift} {max_operations}번\n최소 운영 시간 지게차: {min_forklift} {min_time}\n최대 운영 시간 지게차: {max_forklift} {max_time}"
+
         pivot_table = filtered_df.pivot_table(index=index_name, columns='시간대', values=value_name, aggfunc=agg_func).fillna(0)
-        return pivot_table, title, index_name, filtered_df
+        return pivot_table, title, index_name, summary_text
 
-    pivot_table, title, index_name, filtered_df = generate_pivot(selected_month, selected_department, selected_process, selected_forklift_class, selected_workplace)
-
-    if analysis_type == '운영 대수':
-        min_day = filtered_df.groupby('시작 날짜')['차대 코드'].nunique().idxmin()
-        max_day = filtered_df.groupby('시작 날짜')['차대 코드'].nunique().idxmax()
-        min_value = filtered_df.groupby('시작 날짜')['차대 코드'].nunique().min()
-        max_value = filtered_df.groupby('시작 날짜')['차대 코드'].nunique().max()
-        additional_text = f"최소 운영 대수: {min_day} {min_value}대, 최대 운영 대수: {max_day} {max_value}대"
-    else:
-        min_day = filtered_df.groupby('차대 코드')['시작 날짜'].count().idxmin()
-        max_day = filtered_df.groupby('차대 코드')['시작 날짜'].count().idxmax()
-        min_value = filtered_df.groupby('차대 코드')['시작 날짜'].count().min()
-        max_value = filtered_df.groupby('차대 코드')['시작 날짜'].count().max()
-        additional_text = f"최소 운영 횟수 지게차: {min_day} {min_value}번, 최대 운영 횟수 지게차: {max_day} {max_value}번"
+    pivot_table, title, index_name, summary_text = generate_pivot(selected_month, selected_department, selected_process, selected_forklift_class, selected_workplace)
 
     # Heatmap 생성
     fig = make_subplots(rows=1, cols=1)
@@ -98,7 +111,7 @@ if uploaded_file is not None and 'df' in locals():
     )
     fig.add_trace(heatmap)
     fig.update_layout(
-        title=title + " (" + additional_text + ")",
+        title=title,
         xaxis=dict(title='시간대', fixedrange=True),
         yaxis=dict(title=index_name, categoryorder='array', categoryarray=sorted(pivot_table.index)),
         plot_bgcolor='white',
@@ -107,10 +120,11 @@ if uploaded_file is not None and 'df' in locals():
         width=900,  # 고정된 너비
         height=graph_height  # 조정 가능한 높이
     )
-    
+
     # 모든 '시작 날짜'를 세로축에 표시 (월일만 표시)
     if analysis_type == '운영 대수':
         fig.update_yaxes(type='category', tickmode='array', tickvals=sorted(pivot_table.index))
 
     # Streamlit을 통해 플롯 보여주기
     st.plotly_chart(fig, use_container_width=True)
+    st.text(summary_text)
