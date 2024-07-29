@@ -66,27 +66,9 @@ if uploaded_file is not None and 'df' in locals():
 
         filtered_df['월일'] = filtered_df['시작 날짜'].dt.strftime('%m-%d')
         pivot_table = filtered_df.pivot_table(index='월일', columns='시간대', values=value_name, aggfunc=agg_func).fillna(0)
-        return filtered_df, pivot_table, title, '월일'
+        return pivot_table, title, '월일'
 
-    filtered_df, pivot_table, title, index_name = generate_pivot(selected_month, selected_department, selected_process, selected_forklift_class, selected_workplace)
-
-    # 최소, 최대 값 계산
-    if analysis_type == '운영 대수':
-        min_value = filtered_df.groupby('차대 코드').size().min()
-        max_value = filtered_df.groupby('차대 코드').size().max()
-        min_code = filtered_df.groupby('차대 코드').size().idxmin()
-        max_code = filtered_df.groupby('차대 코드').size().idxmax()
-        min_date = filtered_df[filtered_df['차대 코드'] == min_code]['시작 날짜'].min().strftime('%m-%d')
-        max_date = filtered_df[filtered_df['차대 코드'] == max_code]['시작 날짜'].max().strftime('%m-%d')
-        title += f"<br>최소 운영 대수: {min_code} {min_value}대, 날짜({min_date}), 최대 운영 대수: {max_code} {max_value}대, 날짜({max_date})"
-    else:
-        min_value = filtered_df.groupby('차대 코드').size().min()
-        max_value = filtered_df.groupby('차대 코드').size().max()
-        min_code = filtered_df.groupby('차대 코드').size().idxmin()
-        max_code = filtered_df.groupby('차대 코드').size().idxmax()
-        min_date = filtered_df[filtered_df['차대 코드'] == min_code]['시작 날짜'].min().strftime('%m-%d')
-        max_date = filtered_df[filtered_df['차대 코드'] == max_code]['시작 날짜'].max().strftime('%m-%d')
-        title += f"<br>최소 운영 횟수: {min_code} {min_value}회, 날짜({min_date}), 최대 운영 횟수: {max_code} {max_value}회, 날짜({max_date})"
+    pivot_table, title, index_name = generate_pivot(selected_month, selected_department, selected_process, selected_forklift_class, selected_workplace)
 
     # Heatmap 생성
     fig = make_subplots(rows=1, cols=1)
@@ -114,7 +96,7 @@ if uploaded_file is not None and 'df' in locals():
     )
     
     # 모든 '시작 날짜'를 월일 형식으로 표시하고 내림차순으로 정렬
-    fig.update_yaxes(type='category', categoryorder='category ascending', tickmode='array', tickvals=pivot_table.index)
+    fig.update_yaxes(type='category', categoryorder='category descending', tickmode='array', tickvals=pivot_table.index)
 
     # Streamlit을 통해 플롯 보여주기
     st.plotly_chart(fig, use_container_width=True)
