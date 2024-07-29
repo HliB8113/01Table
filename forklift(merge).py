@@ -64,9 +64,8 @@ if uploaded_file is not None and 'df' in locals():
             agg_func = 'count'
             title = '지게차 시간대별 운영 횟수'
 
-        filtered_df['월일'] = filtered_df['시작 날짜'].dt.strftime('%m-%d')
-        pivot_table = filtered_df.pivot_table(index='월일', columns='시간대', values=value_name, aggfunc=agg_func).fillna(0)
-        return pivot_table, title, '월일'
+        pivot_table = filtered_df.pivot_table(index=index_name, columns='시간대', values=value_name, aggfunc=agg_func).fillna(0)
+        return pivot_table, title, index_name
 
     pivot_table, title, index_name = generate_pivot(selected_month, selected_department, selected_process, selected_forklift_class, selected_workplace)
 
@@ -95,8 +94,8 @@ if uploaded_file is not None and 'df' in locals():
         height=graph_height  # 조정 가능한 높이
     )
     
-    # 모든 '시작 날짜'를 월일 형식으로 표시하고 내림차순으로 정렬
-    fig.update_yaxes(type='category', categoryorder='category descending', tickmode='array', tickvals=pivot_table.index)
+    # 모든 '시작 날짜'를 세로축에 표시
+    fig.update_yaxes(type='category', categoryorder='total ascending', tickmode='array', tickvals=pivot_table.index)
 
     # Streamlit을 통해 플롯 보여주기
     st.plotly_chart(fig, use_container_width=True)
