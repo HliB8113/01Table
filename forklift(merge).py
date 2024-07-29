@@ -66,56 +66,25 @@ if uploaded_file is not None and 'df' in locals():
             title = '지게차 시간대별 운영 횟수'
 
         pivot_table = filtered_df.pivot_table(index=index_name, columns='시간대', values=value_name, aggfunc=agg_func).fillna(0)
-        return filtered_df, pivot_table, title, index_name
+        return pivot_table, title, index_name, filtered_df
 
-    filtered_df, pivot_table, title, index_name = generate_pivot(selected_month, selected_department, selected_process, selected_forklift_class, selected_workplace)
+    pivot_table, title, index_name, filtered_df = generate_pivot(selected_month, selected_department, selected_process, selected_forklift_class, selected_workplace)
+
+    if analysis_type == '운영 대수':
+        min_day = filtered_df.groupby('시작 날짜')['차대 코드'].nunique().idxmin()
+        max_day = filtered_df.groupby('시작 날짜')['차대 코드'].nunique().idxmax()
+        min_value = filtered_df.groupby('시작 날짜')['차대 코드'].nunique().min()
+        max_value = filtered_df.groupby('시작 날짜')['차대 코드'].nunique().max()
+        additional_text = f"최소 운영 대수: {min_day} {min_value}대, 최대 운영 대수: {max_day} {max_value}대"
+    else:
+        min_day = filtered_df.groupby('차대 코드')['시작 날짜'].count().idxmin()
+        max_day = filtered_df.groupby('차대 코드')['시작 날짜'].count().idxmax()
+        min_value = filtered_df.groupby('차대 코드')['시작 날짜'].count().min()
+        max_value = filtered_df.groupby('차대 코드')['시작 날짜'].count().max()
+        additional_text = f"최소 운영 횟수 지게차: {min_day} {min_value}번, 최대 운영 횟수 지게차: {max_day} {max_value}번"
 
     # Heatmap 생성
     fig = make_subplots(rows=1, cols=1)
     tooltip_texts = [[f'{analysis_type} {int(val)}{"대" if analysis_type == "운영 대수" else "번"}' for val in row] for row in pivot_table.values]
     heatmap = go.Heatmap(
-        z=pivot_table.values,
-        x=pivot_table.columns,
-        y=pivot_table.index,
-        colorscale=[[0, 'white'], [1, 'purple']],
-        hoverinfo='text',
-        text=tooltip_texts,
-        zmin=0,
-        zmax=pivot_table.values.max()
-    )
-    fig.add_trace(heatmap)
-    fig.update_layout(
-        title=title,
-        xaxis=dict(title='시간대', fixedrange=True),
-        yaxis=dict(title=index_name, categoryorder='array', categoryarray=sorted(pivot_table.index)),
-        plot_bgcolor='white',
-        paper_bgcolor='white',
-        margin=dict(l=50, r=50, t=100, b=50),
-        width=900,  # 고정된 너비
-        height=graph_height  # 조정 가능한 높이
-    )
-    
-    # 모든 '시작 날짜'를 세로축에 표시 (월일만 표시)
-    if analysis_type == '운영 대수':
-        fig.update_yaxes(type='category', tickmode='array', tickvals=sorted(pivot_table.index))
-
-    # Streamlit을 통해 플롯 보여주기
-    st.plotly_chart(fig, use_container_width=True)
-    
-    # 최소 및 최대 운영 대수 또는 운영 횟수 계산
-    if analysis_type == '운영 대수':
-        min_date = pivot_table.sum(axis=1).idxmin()
-        min_value = pivot_table.sum(axis=1).min()
-        max_date = pivot_table.sum(axis=1).idxmax()
-        max_value = pivot_table.sum(axis=1).max()
-        st.write(f"최소 운영 대수: {min_date} {min_value}대")
-        st.write(f"최대 운영 대수: {max_date} {max_value}대")
-    else:
-        min_forklift = pivot_table.sum(axis=0).idxmin()
-        min_value = pivot_table.sum(axis=0).min()
-        max_forklift = pivot_table.sum(axis=0).idxmax()
-        max_value = pivot_table.sum(axis=0).max()
-        min_date = filtered_df[filtered_df['차대 코드'] == min_forklift]['시작 날짜'].dt.strftime('%m-%d').iloc[0]
-        max_date = filtered_df[filtered_df['차대 코드'] == max_forklift]['시작 날짜'].dt.strftime('%m-%d').iloc[0]
-        st.write(f"최소 운영 횟수 지게차: {min_date} {min_forklift} {min_value}번")
-        st.write(f"최대 운영 횟수 지게차: {max_date} {max_forklift} {max_value}번")
+        z=pivot_table.value
