@@ -96,7 +96,7 @@ if uploaded_file is not None and 'df' in locals():
     )
     
     # 모든 '시작 날짜'를 월일 형식으로 표시하고 내림차순으로 정렬
-    fig.update_yaxes(type='category', categoryorder='category descending', tickmode='array', tickvals=pivot_table.index)
+    fig.update_yaxes(type='category', categoryorder='category ascending', tickmode='array', tickvals=pivot_table.index)
 
     # Streamlit을 통해 플롯 보여주기
     st.plotly_chart(fig, use_container_width=True)
