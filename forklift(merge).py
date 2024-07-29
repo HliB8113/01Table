@@ -131,7 +131,7 @@ if uploaded_file is not None and 'df' in locals():
         annotations=[
             go.layout.Annotation(
                 text=summary.replace('\n', '<br>'),
-                align='left',
+                align='right',
                 showarrow=False,
                 xref='paper',
                 yref='paper',
