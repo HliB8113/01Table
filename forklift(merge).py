@@ -66,9 +66,31 @@ if uploaded_file is not None and 'df' in locals():
 
         filtered_df['월일'] = filtered_df['시작 날짜'].dt.strftime('%m-%d')
         pivot_table = filtered_df.pivot_table(index='월일', columns='시간대', values=value_name, aggfunc=agg_func).fillna(0)
-        return pivot_table, title, '월일'
+        return filtered_df, pivot_table, title, '월일'
 
-    pivot_table, title, index_name = generate_pivot(selected_month, selected_department, selected_process, selected_forklift_class, selected_workplace)
+    def calculate_stats(filtered_df):
+        if analysis_type == '운영 대수':
+            stats_df = filtered_df.groupby('차대 코드').size()
+            min_value = stats_df.min()
+            max_value = stats_df.max()
+            min_code = stats_df.idxmin()
+            max_code = stats_df.idxmax()
+            min_time = filtered_df[filtered_df['차대 코드'] == min_code]['시작 날짜'].min().strftime('%Y-%m-%d')
+            max_time = filtered_df[filtered_df['차대 코드'] == max_code]['시작 날짜'].max().strftime('%Y-%m-%d')
+        else:
+            stats_df = filtered_df.groupby(['차대 코드', '시간대']).size().reset_index(name='운영 횟수')
+            min_value = stats_df['운영 횟수'].min()
+            max_value = stats_df['운영 횟수'].max()
+            min_code = stats_df.loc[stats_df['운영 횟수'].idxmin(), '차대 코드']
+            max_code = stats_df.loc[stats_df['운영 횟수'].idxmax(), '차대 코드']
+            min_time = filtered_df[filtered_df['차대 코드'] == min_code]['시작 날짜'].min().strftime('%Y-%m-%d')
+            max_time = filtered_df[filtered_df['차대 코드'] == max_code]['시작 날짜'].max().strftime('%Y-%m-%d')
+
+        return min_value, max_value, min_code, max_code, min_time, max_time
+
+    filtered_df, pivot_table, title, index_name = generate_pivot(selected_month, selected_department, selected_process, selected_forklift_class, selected_workplace)
+    min_value, max_value, min_code, max_code, min_time, max_time = calculate_stats(filtered_df)
+    title += f" (최소: {min_code} - {min_value} / {min_time}, 최대: {max_code} - {max_value} / {max_time})"
 
     # Heatmap 생성
     fig = make_subplots(rows=1, cols=1)
