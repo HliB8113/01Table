@@ -97,7 +97,7 @@ if uploaded_file is not None and 'df' in locals():
             def format_time(seconds):
                 hours, seconds = divmod(seconds, 3600)
                 minutes, seconds = divmod(seconds, 60)
-                return f"{hours:02}:{minutes:02}"
+                return f"{hours:02}:{minutes:02}:{seconds:02}"
 
             min_operating_time_formatted = format_time(min_operating_time)
             max_operating_time_formatted = format_time(max_operating_time)
