@@ -152,7 +152,7 @@ if uploaded_file is not None and 'df' in locals():
         xref='paper',
         yref='paper',
         x=0,
-        y=1.125,
+        y=1.05,
         bordercolor='black',
         borderwidth=1,
         bgcolor='white',
