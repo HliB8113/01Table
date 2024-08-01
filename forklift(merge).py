@@ -74,9 +74,15 @@ if uploaded_file is not None and 'df' in locals():
             min_operating_units_ratio = (min_operating_units / total_operating_units) * 100
             max_operating_units_ratio = (max_operating_units / total_operating_units) * 100
             
-            summary = f"월 전체 운영 대수: {total_operating_units}대\n"
-            summary += f"최소 운영 대수: {min_operating_day} {min_operating_units}대 ({min_operating_units_ratio:.2f}%)\n"
-            summary += f"최대 운영 대수: {max_operating_day} {max_operating_units}대 ({max_operating_units_ratio:.2f}%)"
+            summary = {
+                'total_units': total_operating_units,
+                'min_units': min_operating_units,
+                'min_units_day': min_operating_day,
+                'min_units_ratio': min_operating_units_ratio,
+                'max_units': max_operating_units,
+                'max_units_day': max_operating_day,
+                'max_units_ratio': max_operating_units_ratio,
+            }
         else:
             index_name = '차대 코드'
             value_name = '시작 날짜'
@@ -119,13 +125,24 @@ if uploaded_file is not None and 'df' in locals():
 
             min_operating_time_formatted = format_time(min_operating_time)
             max_operating_time_formatted = format_time(max_operating_time)
+            total_operating_time_formatted = format_time(total_operating_time)
             
-            summary = f"전체 운영 횟수: {total_operating_counts}번\n"
-            summary += f"최소 운영 횟수 지게차: {min_operating_unit} {min_operating_counts}번 ({min_operating_counts_ratio:.2f}%)\n"
-            summary += f"최대 운영 횟수 지게차: {max_operating_unit} {max_operating_counts}번 ({max_operating_counts_ratio:.2f}%)\n"
-            summary += f"전체 운영 시간: {format_time(total_operating_time)}\n"
-            summary += f"최소 운영 시간 지게차: {min_time_unit} {min_operating_time_formatted} ({min_operating_time_ratio:.2f}%)\n"
-            summary += f"최대 운영 시간 지게차: {max_time_unit} {max_operating_time_formatted} ({max_operating_time_ratio:.2f}%)"
+            summary = {
+                'total_counts': total_operating_counts,
+                'min_counts': min_operating_counts,
+                'min_counts_unit': min_operating_unit,
+                'min_counts_ratio': min_operating_counts_ratio,
+                'max_counts': max_operating_counts,
+                'max_counts_unit': max_operating_unit,
+                'max_counts_ratio': max_operating_counts_ratio,
+                'total_time': total_operating_time_formatted,
+                'min_time': min_operating_time_formatted,
+                'min_time_unit': min_time_unit,
+                'min_time_ratio': min_operating_time_ratio,
+                'max_time': max_operating_time_formatted,
+                'max_time_unit': max_time_unit,
+                'max_time_ratio': max_operating_time_ratio,
+            }
         
         pivot_table = filtered_df.pivot_table(index=index_name, columns='시간대', values=value_name, aggfunc=agg_func).fillna(0)
         return pivot_table, title, index_name, summary
@@ -155,7 +172,7 @@ if uploaded_file is not None and 'df' in locals():
         yaxis=dict(title=index_name, categoryorder='array', categoryarray=sorted(pivot_table.index)),
         plot_bgcolor='white',
         paper_bgcolor='white',
-        margin=dict(l=50, r=50, t=150, b=150),  # 하단 여백을 늘려서 요약 내용을 더 잘 보이도록 설정
+        margin=dict(l=50, r=50, t=150, b=50),
         width=900,  # 고정된 너비
         height=graph_height  # 조정 가능한 높이
     )
@@ -164,20 +181,35 @@ if uploaded_file is not None and 'df' in locals():
     if analysis_type == '운영 대수':
         fig.update_yaxes(type='category', tickmode='array', tickvals=sorted(pivot_table.index))
 
-    # 계산된 값들 추가
+    # 요약 정보를 가로로 배치하여 표시
+    summary_text = (
+        f"<b>운영 대수</b><br>"
+        f"전체: {summary.get('total_units', '')}대<br>"
+        f"최소: {summary.get('min_units', '')}대 ({summary.get('min_units_ratio', ''):.2f}%)<br>"
+        f"최대: {summary.get('max_units', '')}대 ({summary.get('max_units_ratio', ''):.2f}%)<br>"
+        f"<br><b>운영 횟수</b><br>"
+        f"전체: {summary.get('total_counts', '')}번<br>"
+        f"최소: {summary.get('min_counts_unit', '')} {summary.get('min_counts', '')}번 ({summary.get('min_counts_ratio', ''):.2f}%)<br>"
+        f"최대: {summary.get('max_counts_unit', '')} {summary.get('max_counts', '')}번 ({summary.get('max_counts_ratio', ''):.2f}%)<br>"
+        f"<br><b>운영 시간</b><br>"
+        f"전체: {summary.get('total_time', '')}<br>"
+        f"최소: {summary.get('min_time_unit', '')} {summary.get('min_time', '')} ({summary.get('min_time_ratio', ''):.2f}%)<br>"
+        f"최대: {summary.get('max_time_unit', '')} {summary.get('max_time', '')} ({summary.get('max_time_ratio', ''):.2f}%)"
+    )
+    
     fig.add_annotation(
-        text=summary.replace('\n', '<br>'),
+        text=summary_text,
         align='left',
         showarrow=False,
         xref='paper',
         yref='paper',
         x=0,
-        y=-0.3,  # 그래프 하단에 요약을 추가하기 위한 위치 조정
+        y=1.075,
         bordercolor='black',
         borderwidth=1,
         bgcolor='white',
         opacity=0.8,
-        font=dict(size=14, color='black')  # 텍스트 색상을 검은색으로 지정하고 폰트 크기를 크게 설정
+        font=dict(color='black', size=12)  # 텍스트 색상을 검은색으로 지정, 폰트 크기 조정
     )
 
     # Streamlit을 통해 플롯 보여주기
