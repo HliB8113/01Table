@@ -30,7 +30,7 @@ with st.sidebar:
         selected_month = st.selectbox('월 선택:', ['전체'] + sorted(df['월'].dropna().unique().tolist()))
         selected_department = st.selectbox('부서 선택:', ['전체'] + sorted(df['부서'].dropna().unique().tolist()))
         selected_process = st.selectbox('공정 선택:', ['전체'] + sorted(df['공정'].dropna().unique().tolist()))
-        selected_forklift_class = st.selectbox('차대 분류 선택:', ['전체'] + sorted(df['차대 분류'].dropna().unique().tolist()))
+        selected_forklift_class = st.selectbox('차대 분류 선택:', ['전체'] + sorted(df['차대 분류'].drop나().unique().tolist()))
         selected_workplace = st.selectbox('작업 장소 선택:', ['전체'] + sorted(df['작업 장소'].dropna().unique().tolist()))
         graph_height = st.slider('그래프 높이 선택', 300, 1500, 900)
 
@@ -182,21 +182,28 @@ if uploaded_file is not None and 'df' in locals():
         fig.update_yaxes(type='category', tickmode='array', tickvals=sorted(pivot_table.index))
 
     # 요약 정보를 가로로 배치하여 표시
-    summary_text = (
-        f"<b>운영 대수</b><br>"
-        f"전체: {summary.get('total_units', 'N/A')}대<br>"
-        f"최소: {summary.get('min_units_day', 'N/A')} {summary.get('min_units', 'N/A')}대 ({summary.get('min_units_ratio', 0):.2f}%)<br>"
-        f"최대: {summary.get('max_units_day', 'N/A')} {summary.get('max_units', 'N/A')}대 ({summary.get('max_units_ratio', 0):.2f}%)<br>"
-        f"<br><b>운영 횟수</b><br>"
-        f"전체: {summary.get('total_counts', 'N/A')}번<br>"
-        f"최소: {summary.get('min_counts_unit', 'N/A')} {summary.get('min_counts', 'N/A')}번 ({summary.get('min_counts_ratio', 0):.2f}%)<br>"
-        f"최대: {summary.get('max_counts_unit', 'N/A')} {summary.get('max_counts', 'N/A')}번 ({summary.get('max_counts_ratio', 0):.2f}%)<br>"
-        f"<br><b>운영 시간</b><br>"
-        f"전체: {summary.get('total_time', 'N/A')}<br>"
-        f"최소: {summary.get('min_time_unit', 'N/A')} {summary.get('min_time', 'N/A')} ({summary.get('min_time_ratio', 0):.2f}%)<br>"
-        f"최대: {summary.get('max_time_unit', 'N/A')} {summary.get('max_time', 'N/A')} ({summary.get('max_time_ratio', 0):.2f}%)"
-    )
+    if analysis_type == '운영 대수':
+        summary_text = (
+            f"<b>운영 대수</b><br>"
+            f"전체: {summary.get('total_units', 'N/A')}대<br>"
+            f"최소: {summary.get('min_units_day', 'N/A')} {summary.get('min_units', 'N/A')}대 ({summary.get('min_units_ratio', 0):.2f}%)<br>"
+            f"최대: {summary.get('max_units_day', 'N/A')} {summary.get('max_units', 'N/A')}대 ({summary.get('max_units_ratio', 0):.2f}%)<br>"
+        )
+    else:
+        summary_text = (
+            f"<b>운영 횟수</b><br>"
+            f"전체: {summary.get('total_counts', 'N/A')}번<br>"
+            f"최소: {summary.get('min_counts_unit', 'N/A')} {summary.get('min_counts', 'N/A')}번 ({summary.get('min_counts_ratio', 0):.2f}%)<br>"
+            f"최대: {summary.get('max_counts_unit', 'N/A')} {summary.get('max_counts', 'N/A')}번 ({summary.get('max_counts_ratio', 0):.2f}%)<br>"
+            f"<br><b>운영 시간</b><br>"
+            f"전체: {summary.get('total_time', 'N/A')}<br>"
+            f"최소: {summary.get('min_time_unit', 'N/A')} {summary.get('min_time', 'N/A')} ({summary.get('min_time_ratio', 0):.2f}%)<br>"
+            f"최대: {summary.get('max_time_unit', 'N/A')} {summary.get('max_time', 'N/A')} ({summary.get('max_time_ratio', 0):.2f}%)"
+        )
     
+    # 요약 정보 위치 조정 (그래프 높이에 따라)
+    annotation_y = 1 + (150 / graph_height)
+
     fig.add_annotation(
         text=summary_text,
         align='left',
@@ -204,7 +211,7 @@ if uploaded_file is not None and 'df' in locals():
         xref='paper',
         yref='paper',
         x=0,
-        y=1.075,
+        y=annotation_y,
         bordercolor='black',
         borderwidth=1,
         bgcolor='white',
