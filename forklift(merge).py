@@ -202,7 +202,7 @@ if uploaded_file is not None and 'df' in locals():
         )
     
     # 요약 정보 위치 조정 (그래프 높이에 따라)
-    annotation_y = 1 + (150 / graph_height)
+    annotation_y = 1.1 + (150 / graph_height)
 
     fig.add_annotation(
         text=summary_text,
