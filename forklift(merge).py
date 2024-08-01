@@ -120,8 +120,10 @@ if uploaded_file is not None and 'df' in locals():
             min_operating_time_formatted = format_time(min_operating_time)
             max_operating_time_formatted = format_time(max_operating_time)
             
-            summary = f"최소 운영 횟수 지게차: {min_operating_unit} {min_operating_counts}번 ({min_operating_counts_ratio:.2f}%)\n"
+            summary = f"전체 운영 횟수: {total_operating_counts}번\n"
+            summary += f"최소 운영 횟수 지게차: {min_operating_unit} {min_operating_counts}번 ({min_operating_counts_ratio:.2f}%)\n"
             summary += f"최대 운영 횟수 지게차: {max_operating_unit} {max_operating_counts}번 ({max_operating_counts_ratio:.2f}%)\n"
+            summary += f"전체 운영 시간: {format_time(total_operating_time)}\n"
             summary += f"최소 운영 시간 지게차: {min_time_unit} {min_operating_time_formatted} ({min_operating_time_ratio:.2f}%)\n"
             summary += f"최대 운영 시간 지게차: {max_time_unit} {max_operating_time_formatted} ({max_operating_time_ratio:.2f}%)"
         
