@@ -74,7 +74,6 @@ if uploaded_file is not None and 'df' in locals():
             min_operating_units_ratio = (min_operating_units / total_operating_units) * 100
             max_operating_units_ratio = (max_operating_units / total_operating_units) * 100
             
-            # Summary 텍스트 생성
             summary = f"월 전체 운영 대수: {total_operating_units}대\n"
             summary += f"최소 운영 대수: {min_operating_day} {min_operating_units}대 ({min_operating_units_ratio:.2f}%)\n"
             summary += f"최대 운영 대수: {max_operating_day} {max_operating_units}대 ({max_operating_units_ratio:.2f}%)"
@@ -113,7 +112,6 @@ if uploaded_file is not None and 'df' in locals():
             min_operating_time_ratio = (min_operating_time / total_operating_time) * 100
             max_operating_time_ratio = (max_operating_time / total_operating_time) * 100
             
-            # 초를 HH:MM:SS 형식으로 변환하는 함수
             def format_time(seconds):
                 hours, seconds = divmod(seconds, 3600)
                 minutes, seconds = divmod(seconds, 60)
@@ -121,13 +119,11 @@ if uploaded_file is not None and 'df' in locals():
 
             min_operating_time_formatted = format_time(min_operating_time)
             max_operating_time_formatted = format_time(max_operating_time)
-            total_operating_time_formatted = format_time(total_operating_time)
             
-            # Summary 텍스트 생성
             summary = f"전체 운영 횟수: {total_operating_counts}번\n"
             summary += f"최소 운영 횟수 지게차: {min_operating_unit} {min_operating_counts}번 ({min_operating_counts_ratio:.2f}%)\n"
             summary += f"최대 운영 횟수 지게차: {max_operating_unit} {max_operating_counts}번 ({max_operating_counts_ratio:.2f}%)\n"
-            summary += f"전체 운영 시간: {total_operating_time_formatted}\n"
+            summary += f"전체 운영 시간: {format_time(total_operating_time)}\n"
             summary += f"최소 운영 시간 지게차: {min_time_unit} {min_operating_time_formatted} ({min_operating_time_ratio:.2f}%)\n"
             summary += f"최대 운영 시간 지게차: {max_time_unit} {max_operating_time_formatted} ({max_operating_time_ratio:.2f}%)"
         
@@ -159,7 +155,7 @@ if uploaded_file is not None and 'df' in locals():
         yaxis=dict(title=index_name, categoryorder='array', categoryarray=sorted(pivot_table.index)),
         plot_bgcolor='white',
         paper_bgcolor='white',
-        margin=dict(l=50, r=50, t=150, b=50),
+        margin=dict(l=50, r=50, t=150, b=150),  # 하단 여백을 늘려서 요약 내용을 더 잘 보이도록 설정
         width=900,  # 고정된 너비
         height=graph_height  # 조정 가능한 높이
     )
@@ -176,12 +172,12 @@ if uploaded_file is not None and 'df' in locals():
         xref='paper',
         yref='paper',
         x=0,
-        y=1.075,
+        y=-0.3,  # 그래프 하단에 요약을 추가하기 위한 위치 조정
         bordercolor='black',
         borderwidth=1,
         bgcolor='white',
         opacity=0.8,
-        font=dict(color='black', size=14)  # 텍스트 색상을 검은색으로 지정하고 폰트 크기를 크게 설정
+        font=dict(size=14, color='black')  # 텍스트 색상을 검은색으로 지정하고 폰트 크기를 크게 설정
     )
 
     # Streamlit을 통해 플롯 보여주기
