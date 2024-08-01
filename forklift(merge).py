@@ -198,7 +198,7 @@ if uploaded_file is not None and 'df' in locals():
             f"<br><b>운영 시간</b><br>"
             f"전체: {summary.get('total_time', 'N/A')}<br>"
             f"최소: {summary.get('min_time_unit', 'N/A')} {summary.get('min_time', 'N/A')} ({summary.get('min_time_ratio', 0):.2f}%)<br>"
-            f"최대: {summary.get('max_time_unit', 'N/A')} {summary.get('max_time', 'N/A')} ({summary.get('max_time_ratio', 0)::.2f}%)"
+            f"최대: {summary.get('max_time_unit', 'N/A')} {summary.get('max_time', 'N/A')} ({summary.get('max_time_ratio', 0):.2f}%)"
         )
     
     # 요약 정보 위치 조정 (그래프 높이에 따라)
