@@ -29,37 +29,98 @@ def validate_and_preprocess_data(df):
     
     return df
 
-# Streamlit 사이드바 설정
-with st.sidebar:
-    uploaded_file = st.file_uploader("파일을 업로드하세요.", type=["csv"])
-    if uploaded_file is not None:
-        try:
-            df = pd.read_csv(uploaded_file)
-            df = validate_and_preprocess_data(df)
-            if df is None:
-                st.stop()
-            
-            # 데이터 형식 변환 및 전처리
-            df['시간대'] = pd.to_datetime(df['시간대'], format='%H:%M', errors='coerce').dt.strftime('%H:%M')
-            df['시작 날짜'] = pd.to_datetime(df['시작 날짜'])
-            df['월'] = df['시작 날짜'].dt.month
-            df = df[df['월'] != 12]  # 12월 데이터 제외
+# 메인 함수
+def main():
+    # Streamlit 사이드바 설정
+    with st.sidebar:
+        uploaded_file = st.file_uploader("파일을 업로드하세요.", type=["csv"])
+        if uploaded_file is not None:
+            try:
+                df = pd.read_csv(uploaded_file)
+                df = validate_and_preprocess_data(df)
+                if df is None:
+                    return
+                
+                # 데이터 형식 변환 및 전처리
+                df['시간대'] = pd.to_datetime(df['시간대'], format='%H:%M', errors='coerce').dt.strftime('%H:%M')
+                df['시작 날짜'] = pd.to_datetime(df['시작 날짜'])
+                df['월'] = df['시작 날짜'].dt.month
+                df = df[df['월'] != 12]  # 12월 데이터 제외
 
-            # 드롭다운 메뉴 설정
-            analysis_type = st.radio("분석 유형 선택:", ('운영 대수', '운영 횟수'))
-            selected_month = st.selectbox('월 선택:', ['전체'] + sorted(df['월'].dropna().unique().tolist()))
-            selected_department = st.selectbox('부서 선택:', ['전체'] + sorted(df['부서'].dropna().unique().tolist()))
-            selected_process = st.selectbox('공정 선택:', ['전체'] + sorted(df['공정'].dropna().unique().tolist()))
-            selected_forklift_class = st.selectbox('차대 분류 선택:', ['전체', 'C/B', 'R/T'])
-            selected_workplace = st.selectbox('작업 장소 선택:', ['전체'] + sorted(df['작업 장소'].dropna().unique().tolist()))
-            graph_height = st.slider('그래프 높이 선택', 300, 1500, 900)
-        except Exception as e:
-            st.error(f"파일 로딩 중 오류 발생: {str(e)}")
-            st.stop()
+                # 드롭다운 메뉴 설정
+                analysis_type = st.radio("분석 유형 선택:", ('운영 대수', '운영 횟수'))
+                selected_month = st.selectbox('월 선택:', ['전체'] + sorted(df['월'].dropna().unique().tolist()))
+                selected_department = st.selectbox('부서 선택:', ['전체'] + sorted(df['부서'].dropna().unique().tolist()))
+                selected_process = st.selectbox('공정 선택:', ['전체'] + sorted(df['공정'].dropna().unique().tolist()))
+                selected_forklift_class = st.selectbox('차대 분류 선택:', ['전체', 'C/B', 'R/T'])
+                selected_workplace = st.selectbox('작업 장소 선택:', ['전체'] + sorted(df['작업 장소'].dropna().unique().tolist()))
+                graph_height = st.slider('그래프 높이 선택', 300, 1500, 900)
 
-# 나머지 코드는 이전과 동일
+                # 데이터 분석 및 그래프 생성
+                create_analysis(df, analysis_type, selected_month, selected_department, selected_process, 
+                                selected_forklift_class, selected_workplace, graph_height)
 
-# ... (중간 코드 생략)
+            except Exception as e:
+                st.error(f"파일 로딩 중 오류 발생: {str(e)}")
+
+def create_analysis(df, analysis_type, selected_month, selected_department, selected_process, 
+                    selected_forklift_class, selected_workplace, graph_height):
+    # generate_pivot 함수 정의 (이전 코드와 동일)
+    def generate_pivot(month, department, process, forklift_class, workplace):
+        # ... (이전 코드와 동일)
+
+    pivot_table, title, index_name, summary = generate_pivot(selected_month, selected_department, 
+                                                             selected_process, selected_forklift_class, 
+                                                             selected_workplace)
+
+    if pivot_table is not None and not pivot_table.empty:
+        fig = make_subplots(rows=1, cols=1)
+        tooltip_texts = [[f'{analysis_type} {int(val)}{"대" if analysis_type == "운영 대수" else "번"}' for val in row] for row in pivot_table.values]
+        heatmap = go.Heatmap(
+            z=pivot_table.values,
+            x=pivot_table.columns,
+            y=pivot_table.index,
+            colorscale=[[0, 'white'], [1, 'purple']],
+            hoverinfo='text',
+            text=tooltip_texts,
+            zmin=0,
+            zmax=pivot_table.values.max()
+        )
+        fig.add_trace(heatmap)
+        fig.update_layout(
+            title={'text': title, 'x': 0.5},
+            xaxis=dict(title='시간대', fixedrange=True),
+            yaxis=dict(title=index_name, categoryorder='array', categoryarray=sorted(pivot_table.index)),
+            plot_bgcolor='white',
+            paper_bgcolor='white',
+            margin=dict(l=50, r=50, t=150, b=50),
+            width=900,
+            height=graph_height
+        )
+        
+        if analysis_type == '운영 대수':
+            fig.update_yaxes(type='category', tickmode='array', tickvals=sorted(pivot_table.index))
+
+        if analysis_type == '운영 대수':
+            summary_text = (
+                f"<b>운영 대수</b><br>"
+                f"전체: {summary.get('total_units', 'N/A')}대<br>"
+                f"최소: {summary.get('min_units_day', 'N/A')} {summary.get('min_units', 'N/A')}대 ({summary.get('min_units_ratio', 0):.2f}%)<br>"
+                f"최대: {summary.get('max_units_day', 'N/A')} {summary.get('max_units', 'N/A')}대 ({summary.get('max_units_ratio', 0):.2f}%)<br>"
+            )
+        else:
+            summary_text = (
+                f"<b>운영 횟수</b><br>"
+                f"전체: {summary.get('total_counts', 'N/A')}번<br>"
+                f"최소: {summary.get('min_counts_unit', 'N/A')} {summary.get('min_counts', 'N/A')}번 ({summary.get('min_counts_ratio', 0):.2f}%)<br>"
+                f"최대: {summary.get('max_counts_unit', 'N/A')} {summary.get('max_counts', 'N/A')}번 ({summary.get('max_counts_ratio', 0):.2f}%)<br>"
+                f"<br><b>운영 시간</b><br>"
+                f"전체: {summary.get('total_time', 'N/A')}<br>"
+                f"최소: {summary.get('min_time_unit', 'N/A')} {summary.get('min_time', 'N/A')} ({summary.get('min_time_ratio', 0):.2f}%)<br>"
+                f"최대: {summary.get('max_time_unit', 'N/A')} {summary.get('max_time', 'N/A')} ({summary.get('max_time_ratio', 0):.2f}%)"
+            )
+        
+        annotation_y = 1.015 + (150 / graph_height)
 
         fig.add_annotation(
             text=summary_text,
@@ -79,3 +140,6 @@ with st.sidebar:
         st.plotly_chart(fig, use_container_width=True)
     else:
         st.warning("데이터를 표시할 수 없습니다. 선택한 조건을 확인해 주세요.")
+
+if __name__ == "__main__":
+    main()
