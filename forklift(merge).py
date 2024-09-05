@@ -225,6 +225,9 @@ if uploaded_file is not None and 'df' in locals():
             )
         
         # 요약 정보 위치 조정 (그래프 높이에 따라)
+        # (이전 코드는 동일)
+
+        # 요약 정보 위치 조정 (그래프 높이에 따라)
         annotation_y = 1.015 + (150 / graph_height)
 
         fig.add_annotation(
@@ -239,4 +242,10 @@ if uploaded_file is not None and 'df' in locals():
             borderwidth=1,
             bgcolor='white',
             opacity=0.8,
-            font=dict(color='black', size=12)
+            font=dict(color='black', size=12)  # 텍스트 색상을 검은색으로 지정, 폰트 크기 조정
+        )
+
+        # Streamlit을 통해 플롯 보여주기
+        st.plotly_chart(fig, use_container_width=True)
+    else:
+        st.warning("데이터를 표시할 수 없습니다. 선택한 조건을 확인해 주세요.")
