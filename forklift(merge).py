@@ -6,14 +6,33 @@ from plotly.subplots import make_subplots
 # Streamlit 페이지 설정
 st.set_page_config(page_title='지게차 운영 분석', layout='wide', initial_sidebar_state='expanded')
 
-# 데이터 검증 함수
-def validate_data(df):
+# 데이터 검증 및 전처리 함수
+def validate_and_preprocess_data(df):
     required_columns = ['시간대', '시작 날짜', '부서', '공정', '차대 분류', '작업 장소', '차대 코드', '운영 시간(초)']
     missing_columns = [col for col in required_columns if col not in df.columns]
     if missing_columns:
         st.error(f"다음 열이 누락되었습니다: {', '.join(missing_columns)}")
-        return False
-    return True
+        return None
+    
+    # '차대 분류' 열 데이터 확인 및 전처리
+    unique_classifications = df['차대 분류'].unique()
+    st.write("고유한 차대 분류 값:", unique_classifications)
+    
+    # 데이터 정제: 공백 제거 및 대문자 변환
+    df['차대 분류'] = df['차대 분류'].str.strip().str.upper()
+    
+    # 'C/B'와 'R/T'로 매핑
+    classification_mapping = {
+        'CB': 'C/B', 'C/B': 'C/B', 'C B': 'C/B',
+        'RT': 'R/T', 'R/T': 'R/T', 'R T': 'R/T'
+    }
+    df['차대 분류'] = df['차대 분류'].map(classification_mapping).fillna(df['차대 분류'])
+    
+    # 전처리 후 고유값 다시 확인
+    unique_classifications_after = df['차대 분류'].unique()
+    st.write("전처리 후 고유한 차대 분류 값:", unique_classifications_after)
+    
+    return df
 
 # Streamlit 사이드바 설정
 with st.sidebar:
@@ -21,7 +40,8 @@ with st.sidebar:
     if uploaded_file is not None:
         try:
             df = pd.read_csv(uploaded_file)
-            if not validate_data(df):
+            df = validate_and_preprocess_data(df)
+            if df is None:
                 st.stop()
             
             # 데이터 형식 변환 및 전처리
@@ -222,9 +242,4 @@ if uploaded_file is not None and 'df' in locals():
             borderwidth=1,
             bgcolor='white',
             opacity=0.8,
-            font=dict(color='black', size=12)
-        )
-
-        st.plotly_chart(fig, use_container_width=True)
-    else:
-        st.warning("데이터를 표시할 수 없습니다. 선택한 조건을 확인해 주세요.")
+            font
