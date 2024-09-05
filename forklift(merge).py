@@ -27,9 +27,14 @@ def validate_and_preprocess_data(df):
     # '차대 분류'가 'C/B' 또는 'R/T'가 아닌 경우 '기타'로 처리
     df.loc[~df['차대 분류'].isin(['C/B', 'R/T']), '차대 분류'] = '기타'
     
+    # '운전자' 열 처리 (부서 약자 제거)
+    df['운전자'] = df['운전자'].str.split().str[-1]
+    
+    # '운영 시간(초)' 열의 '#####' 값 처리
+    df['운영 시간(초)'] = pd.to_numeric(df['운영 시간(초)'].replace('#####', '0'), errors='coerce')
+    
     return df
 
-# 메인 함수
 def main():
     # Streamlit 사이드바 설정
     with st.sidebar:
@@ -65,9 +70,115 @@ def main():
 
 def create_analysis(df, analysis_type, selected_month, selected_department, selected_process, 
                     selected_forklift_class, selected_workplace, graph_height):
-    # generate_pivot 함수 정의 (이전 코드와 동일)
     def generate_pivot(month, department, process, forklift_class, workplace):
-        # ... (이전 코드와 동일)
+        try:
+            filtered_df = df.copy()
+            if month != '전체':
+                filtered_df = filtered_df[filtered_df['월'] == month]
+            if department != '전체':
+                filtered_df = filtered_df[filtered_df['부서'] == department]
+            if process != '전체':
+                filtered_df = filtered_df[filtered_df['공정'] == process]
+            if forklift_class != '전체':
+                filtered_df = filtered_df[filtered_df['차대 분류'] == forklift_class]
+            if workplace != '전체':
+                filtered_df = filtered_df[filtered_df['작업 장소'] == workplace]
+
+            if filtered_df.empty:
+                st.warning("선택한 조건에 해당하는 데이터가 없습니다.")
+                return None, None, None, None
+
+            if analysis_type == '운영 대수':
+                filtered_df['시작 날짜'] = filtered_df['시작 날짜'].dt.strftime('%m-%d')
+                index_name = '시작 날짜'
+                value_name = '차대 코드'
+                agg_func = 'nunique'
+                title = '지게차 일자별 운영 대수'
+                
+                daily_counts = filtered_df.groupby('시작 날짜')[value_name].nunique()
+                
+                if daily_counts.empty:
+                    st.warning("유효한 일별 운영 대수 데이터가 없습니다.")
+                    return None, None, None, None
+                
+                total_operating_units = filtered_df[value_name].nunique()
+                min_operating_units = daily_counts.min()
+                max_operating_units = daily_counts.max()
+                min_operating_day = daily_counts.idxmin()
+                max_operating_day = daily_counts.idxmax()
+
+                min_operating_units_ratio = (min_operating_units / total_operating_units) * 100
+                max_operating_units_ratio = (max_operating_units / total_operating_units) * 100
+                
+                summary = {
+                    'total_units': total_operating_units,
+                    'min_units': min_operating_units,
+                    'min_units_day': min_operating_day,
+                    'min_units_ratio': min_operating_units_ratio,
+                    'max_units': max_operating_units,
+                    'max_units_day': max_operating_day,
+                    'max_units_ratio': max_operating_units_ratio,
+                }
+            else:
+                index_name = '차대 코드'
+                value_name = '시작 날짜'
+                agg_func = 'count'
+                title = '지게차 시간대별 운영 횟수'
+                
+                unit_counts = filtered_df.groupby(['차대 코드'])['시작 날짜'].count()
+                
+                if unit_counts.empty:
+                    st.warning("유효한 지게차별 운영 횟수 데이터가 없습니다.")
+                    return None, None, None, None
+                
+                min_operating_counts = unit_counts.min()
+                max_operating_counts = unit_counts.max()
+                min_operating_unit = unit_counts.idxmin()
+                max_operating_unit = unit_counts.idxmax()
+
+                total_operating_counts = unit_counts.sum()
+                
+                min_operating_counts_ratio = (min_operating_counts / total_operating_counts) * 100
+                max_operating_counts_ratio = (max_operating_counts / total_operating_counts) * 100
+                
+                operating_times = filtered_df.groupby('차대 코드')['운영 시간(초)'].sum()
+                min_operating_time = operating_times.min()
+                max_operating_time = operating_times.max()
+                min_time_unit = operating_times.idxmin()
+                max_time_unit = operating_times.idxmax()
+                
+                total_operating_time = operating_times.sum()
+
+                min_operating_time_ratio = (min_operating_time / total_operating_time) * 100
+                max_operating_time_ratio = (max_operating_time / total_operating_time) * 100
+                
+                def format_time(seconds):
+                    hours, seconds = divmod(seconds, 3600)
+                    minutes, seconds = divmod(seconds, 60)
+                    return f"{hours:02}:{minutes:02}:{seconds:02}"
+
+                summary = {
+                    'total_counts': total_operating_counts,
+                    'min_counts': min_operating_counts,
+                    'min_counts_unit': min_operating_unit,
+                    'min_counts_ratio': min_operating_counts_ratio,
+                    'max_counts': max_operating_counts,
+                    'max_counts_unit': max_operating_unit,
+                    'max_counts_ratio': max_operating_counts_ratio,
+                    'total_time': format_time(total_operating_time),
+                    'min_time': format_time(min_operating_time),
+                    'min_time_unit': min_time_unit,
+                    'min_time_ratio': min_operating_time_ratio,
+                    'max_time': format_time(max_operating_time),
+                    'max_time_unit': max_time_unit,
+                    'max_time_ratio': max_operating_time_ratio,
+                }
+            
+            pivot_table = filtered_df.pivot_table(index=index_name, columns='시간대', values=value_name, aggfunc=agg_func).fillna(0)
+            return pivot_table, title, index_name, summary
+        except Exception as e:
+            st.error(f"데이터 처리 중 오류 발생: {str(e)}")
+            return None, None, None, None
 
     pivot_table, title, index_name, summary = generate_pivot(selected_month, selected_department, 
                                                              selected_process, selected_forklift_class, 
@@ -122,24 +233,4 @@ def create_analysis(df, analysis_type, selected_month, selected_department, sele
         
         annotation_y = 1.015 + (150 / graph_height)
 
-        fig.add_annotation(
-            text=summary_text,
-            align='left',
-            showarrow=False,
-            xref='paper',
-            yref='paper',
-            x=0,
-            y=annotation_y,
-            bordercolor='black',
-            borderwidth=1,
-            bgcolor='white',
-            opacity=0.8,
-            font=dict(color='black', size=12)
-        )
-
-        st.plotly_chart(fig, use_container_width=True)
-    else:
-        st.warning("데이터를 표시할 수 없습니다. 선택한 조건을 확인해 주세요.")
-
-if __name__ == "__main__":
-    main()
+        fig.
