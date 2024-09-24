@@ -1,4 +1,4 @@
-"import streamlit as st
+import streamlit as st
 import pandas as pd
 import plotly.graph_objs as go
 from plotly.subplots import make_subplots
@@ -220,4 +220,4 @@ if uploaded_file is not None and 'df' in locals():
     )
 
     # Streamlit을 통해 플롯 보여주기
-    st.plotly_chart(fig, use_container_width=True)"
+    st.plotly_chart(fig, use_container_width=True)
