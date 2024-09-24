@@ -50,66 +50,30 @@ if uploaded_file is not None and 'df' in locals():
             filtered_df = filtered_df[filtered_df['작업 장소'] == workplace]
 
         if analysis_type == '운영 대수':
-            filtered_df['시작 날짜'] = filtered_df['시작 날짜'].dt.strftime('%m-%d')  # 날짜를 MM-DD 형식으로 포맷팅
+            filtered_df['시작 날짜'] = filtered_df['시작 날짜'].dt.strftime('%m-%d')
             index_name = '시작 날짜'
             value_name = '차대 코드'
             agg_func = 'nunique'
             title = '지게차 일자별 운영 대수'
             
-            # 월 전체 운영 대수 계산
-            total_operating_units = filtered_df[value_name].nunique()
+            # 월별 집계를 계산
+            pivot_table = filtered_df.pivot_table(index=index_name, columns='시간대', values=value_name, aggfunc=agg_func).fillna(0)
             
-            # 월 최소 및 최대 운영 대수 계산
-            daily_counts = filtered_df.groupby('시작 날짜')[value_name].nunique()
-            min_operating_units = daily_counts.min()
-            max_operating_units = daily_counts.max()
-            min_operating_day = daily_counts.idxmin()
-            max_operating_day = daily_counts.idxmax()
-        
-            # 평균 운영 대수 계산
-            avg_units = daily_counts.mean()
-        
-            summary = {
-                'total_units': total_operating_units,
-                'min_units': min_operating_units,
-                'min_units_day': min_operating_day,
-                'max_units': max_operating_units,
-                'max_units_day': max_operating_day,
-                'avg_units': avg_units  # 평균 값을 요약 정보에 추가
-            }
+            return pivot_table, title, index_name
 
         else:
+            filtered_df['시작 날짜'] = filtered_df['시작 날짜'].dt.strftime('%m-%d')
             index_name = '차대 코드'
             value_name = '시작 날짜'
             agg_func = 'count'
             title = '지게차 시간대별 운영 횟수'
             
-            # 월 최소 및 최대 운영 횟수 계산
-            unit_counts = filtered_df.groupby('차대 코드')[value_name].count()
-            min_operating_counts = unit_counts.min()
-            max_operating_counts = unit_counts.max()
-            min_operating_unit = unit_counts.idxmin()
-            max_operating_unit = unit_counts.idxmax()
-
-            # 평균 운영 횟수 계산
-            avg_operating_counts = unit_counts.mean()
-
-            # 전체 운영 횟수 계산
-            total_operating_counts = unit_counts.sum()
+            # 월별 집계를 계산
+            pivot_table = filtered_df.pivot_table(index=index_name, columns='시간대', values=value_name, aggfunc=agg_func).fillna(0)
             
-            summary = {
-                'total_counts': total_operating_counts,
-                'min_counts': min_operating_counts,
-                'min_counts_unit': min_operating_unit,
-                'max_counts': max_operating_counts,
-                'max_counts_unit': max_operating_unit,
-                'avg_counts': avg_operating_counts  # 평균 운영 횟수를 요약 정보에 추가
-            }
-        
-        pivot_table = filtered_df.pivot_table(index=index_name, columns='시간대', values=value_name, aggfunc=agg_func).fillna(0)
-        return pivot_table, title, index_name, summary
+            return pivot_table, title, index_name
 
-    pivot_table, title, index_name, summary = generate_pivot(selected_month, selected_department, selected_process, selected_forklift_class, selected_workplace)
+    pivot_table, title, index_name = generate_pivot(selected_month, selected_department, selected_process, selected_forklift_class, selected_workplace)
 
     # Heatmap 생성
     fig = make_subplots(rows=1, cols=1)
@@ -134,43 +98,10 @@ if uploaded_file is not None and 'df' in locals():
         yaxis=dict(title=index_name, categoryorder='array', categoryarray=sorted(pivot_table.index)),
         plot_bgcolor='white',
         paper_bgcolor='white',
-        margin=dict(l=50, r=50, t=150, b=50),
-        width=900,  # 고정된 너비
-        height=graph_height  # 조정 가능한 높이
+        margin=dict(l=50, r=50, t=150, b50),
+        width=900,
+        height=graph_height
     )
     
-    # 요약 정보를 가로로 배치하여 표시
-    summary_text = (
-        f"<b>운영 대수</b><br>"
-        f"전체: {summary.get('total_units', 'N/A')}대<br>"
-        f"최소: {summary.get('min_units_day', 'N/A')} {summary.get('min_units', 'N/A')}대 ({summary.get('min_units_ratio', 0):.2f}%)<br>"
-        f"최대: {summary.get('max_units_day', 'N/A')} {summary.get('max_units', 'N/A')}대 ({summary.get('max_units_ratio', 0):.2f}%)<br>"
-        f"평균: {summary.get('avg_units', 'N/A'):.2f}대<br>"
-        if analysis_type == '운영 대수' else
-        f"<b>운영 횟수</b><br>"
-        f"전체: {summary.get('total_counts', 'N/A')}번<br>"
-        f"최소: {summary.get('min_counts_unit', 'N/A')} {summary.get('min_counts', 'N/A')}번 ({summary.get('min_counts_ratio', 0):.2f}%)<br>"
-        f"최대: {summary.get('max_counts_unit', 'N/A')} {summary.get('max_counts', 'N/A')}번 ({summary.get('max_counts_ratio', 0):.2f}%)<br>"
-        f"평균 횟수: {summary.get('avg_counts', 'N/A'):.2f}번<br>"
-    )
-    
-    # 요약 정보 위치 조정 (그래프 높이에 따라)
-    annotation_y = 1.015 + (150 / graph_height)
-
-    fig.add_annotation(
-        text=summary_text,
-        align='left',
-        showarrow=False,
-        xref='paper',
-        yref='paper',
-        x=0,
-        y=annotation_y,
-        bordercolor='black',
-        borderwidth=1,
-        bgcolor='white',
-        opacity=0.8,
-        font=dict(color='black', size=12)  # 텍스트 색상을 검은색으로 지정, 폰트 크기 조정
-    )
-
     # Streamlit을 통해 플롯 보여주기
     st.plotly_chart(fig, use_container_width=True)
