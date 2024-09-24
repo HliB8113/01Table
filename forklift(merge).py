@@ -3,6 +3,11 @@ import pandas as pd
 import plotly.graph_objs as go
 from plotly.subplots import make_subplots
 
+def format_time(seconds):
+    hours, seconds = divmod(seconds, 3600)
+    minutes, seconds = divmod(seconds, 60)
+    return f"{int(hours)}:{int(minutes):02}:{int(seconds):02}"
+
 # Streamlit 페이지 설정
 st.set_page_config(page_title='My Streamlit App', layout='wide', initial_sidebar_state='expanded')
 
@@ -11,21 +16,11 @@ with st.sidebar:
     uploaded_file = st.file_uploader("파일을 업로드하세요.", type=["csv"])
     if uploaded_file is not None:
         df = pd.read_csv(uploaded_file)
-        
-        # 시간대를 시간 형식으로 변환
-        try:
-            df['시간대'] = pd.to_datetime(df['시간대'], format='%H:%M', errors='coerce').dt.strftime('%H:%M')
-        except ValueError:
-            df['시간대'] = pd.to_datetime(df['시간대'], format='%H:%M:%S', errors='coerce').dt.strftime('%H:%M')
-
-        # 시작 날짜를 날짜 형식으로 변환 및 월 열 추가
+        df['시간대'] = pd.to_datetime(df['시간대'], errors='coerce').dt.strftime('%H:%M')
         df['시작 날짜'] = pd.to_datetime(df['시작 날짜'])
         df['월'] = df['시작 날짜'].dt.month
-
-        # 12월 데이터 제외
         df = df[df['월'] != 12]
 
-        # 드롭다운 메뉴 설정
         analysis_type = st.radio("분석 유형 선택:", ('운영 대수', '운영 횟수'))
         selected_month = st.selectbox('월 선택:', ['전체'] + sorted(df['월'].dropna().unique().tolist()))
         selected_department = st.selectbox('부서 선택:', ['전체'] + sorted(df['부서'].dropna().unique().tolist()))
@@ -33,6 +28,9 @@ with st.sidebar:
         selected_forklift_class = st.selectbox('차대 분류 선택:', ['전체'] + sorted(df['차대 분류'].dropna().unique().tolist()))
         selected_workplace = st.selectbox('작업 장소 선택:', ['전체'] + sorted(df['작업 장소'].dropna().unique().tolist()))
         graph_height = st.slider('그래프 높이 선택', 300, 1500, 900)
+
+# 이후 코드는 위에서 제공한 전체 코드와 동일합니다.
+
 
 # 메인 페이지 설정
 if uploaded_file is not None and 'df' in locals():
