@@ -221,7 +221,3 @@ if uploaded_file is not None and 'df' in locals():
 
     # Streamlit을 통해 플롯 보여주기
     st.plotly_chart(fig, use_container_width=True)
-
-위에 코드를 기반으로 추가 사항을 반영해줘.
-
-운영 대수, 운영 횟수, 운영 시간에 따른 최소값, 최대값이 계산되고 요약 정보로도 출력되고 있어. 운영 대수, 운영 횟수, 운영 시간에 따른 평균값을 계산하고 요약 정보로 출력하는 코드를 만들어줘.
