@@ -19,8 +19,8 @@ with st.sidebar:
             df['시간대'] = pd.to_datetime(df['시간대'], format='%H:%M:%S', errors='coerce').dt.strftime('%H:%M')
 
         # 시작 날짜를 날짜 형식으로 변환 및 월 열 추가
-        df['시작 날짜'] = pd.to_datetime(df['시작 날짜'])
-        df['월'] = df['시작 날짜'].dt.month
+        df['시작 날짜'] = pd.to_datetime(df['시작 날짜']).dt.strftime('%m-%d')
+        df['월'] = pd.to_datetime(df['시작 날짜'], format='%m-%d').dt.month
 
         # 12월 데이터 제외
         df = df[df['월'] != 12]
@@ -50,7 +50,6 @@ if uploaded_file is not None and 'df' in locals():
             filtered_df = filtered_df[filtered_df['작업 장소'] == workplace]
 
         if analysis_type == '운영 대수':
-            filtered_df['시작 날짜'] = filtered_df['시작 날짜'].dt.strftime('%m-%d')
             index_name = '시작 날짜'
             value_name = '차대 코드'
             agg_func = 'nunique'
@@ -61,15 +60,17 @@ if uploaded_file is not None and 'df' in locals():
             total_operating_units = daily_counts.sum()
             min_operating_units = daily_counts.min()
             max_operating_units = daily_counts.max()
-            avg_operating_units = daily_counts.mean()  # 평균 운영 대수 계산
-            
+            avg_operating_units = daily_counts.mean()  # 평균 운영 대수 추가
+            min_operating_day = daily_counts.idxmin()
+            max_operating_day = daily_counts.idxmax()
+
             summary = {
                 'total_units': total_operating_units,
                 'min_units': min_operating_units,
-                'min_units_day': daily_counts.idxmin(),
+                'min_units_day': min_operating_day,
                 'max_units': max_operating_units,
-                'max_units_day': daily_counts.idxmax(),
-                'avg_units': avg_operating_units
+                'max_units_day': max_operating_day,
+                'avg_units': avg_operating_units  # 평균값 추가
             }
         else:
             index_name = '차대 코드'
@@ -81,15 +82,17 @@ if uploaded_file is not None and 'df' in locals():
             unit_counts = filtered_df.groupby(['차대 코드'])['시작 날짜'].count()
             min_operating_counts = unit_counts.min()
             max_operating_counts = unit_counts.max()
-            avg_operating_counts = unit_counts.mean()  # 평균 운영 횟수 계산
-            
+            avg_operating_counts = unit_counts.mean()  # 평균 운영 횟수 추가
+            min_operating_unit = unit_counts.idxmin()
+            max_operating_unit = unit_counts.idxmax()
+
             summary = {
                 'total_counts': unit_counts.sum(),
                 'min_counts': min_operating_counts,
-                'min_counts_unit': unit_counts.idxmin(),
+                'min_counts_unit': min_operating_unit,
                 'max_counts': max_operating_counts,
-                'max_counts_unit': unit_counts.idxmax(),
-                'avg_counts': avg_operating_counts
+                'max_counts_unit': max_operating_unit,
+                'avg_counts': avg_operating_counts  # 평균값 추가
             }
 
         pivot_table = filtered_df.pivot_table(index=index_name, columns='시간대', values=value_name, aggfunc=agg_func).fillna(0)
@@ -120,10 +123,9 @@ if uploaded_file is not None and 'df' in locals():
         yaxis=dict(title=index_name, categoryorder='array', categoryarray=sorted(pivot_table.index)),
         plot_bgcolor='white',
         paper_bgcolor='white',
-        margin=dict(l=50, r=50, t=150, b=50),
+        margin=dict(l=50, r=50, t150, b=50),
         width=900,  # 고정된 너비
         height=graph_height  # 조정 가능한 높이
     )
-    
-    # Streamlit을 통해 플롯 보여주기
+
     st.plotly_chart(fig, use_container_width=True)
