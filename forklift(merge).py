@@ -63,10 +63,11 @@ if uploaded_file is not None and 'df' in locals():
             # 월 전체 운영 대수 계산
             total_operating_units = filtered_df[value_name].nunique()
             
-            # 월 최소 및 최대 운영 대수 계산
+            # 월 최소, 최대, 평균 운영 대수 계산
             daily_counts = filtered_df.groupby('시작 날짜')[value_name].nunique()
             min_operating_units = daily_counts.min()
             max_operating_units = daily_counts.max()
+            avg_operating_units = daily_counts.mean()  # 평균값 계산
             min_operating_day = daily_counts.idxmin()
             max_operating_day = daily_counts.idxmax()
 
@@ -82,6 +83,7 @@ if uploaded_file is not None and 'df' in locals():
                 'max_units': max_operating_units,
                 'max_units_day': max_operating_day,
                 'max_units_ratio': max_operating_units_ratio,
+                'avg_units': avg_operating_units,  # 평균값 추가
             }
         else:
             index_name = '차대 코드'
@@ -89,10 +91,11 @@ if uploaded_file is not None and 'df' in locals():
             agg_func = 'count'
             title = '지게차 시간대별 운영 횟수'
             
-            # 월 최소 및 최대 운영 횟수 계산
+            # 월 최소, 최대, 평균 운영 횟수 계산
             unit_counts = filtered_df.groupby(['차대 코드'])['시작 날짜'].count()
             min_operating_counts = unit_counts.min()
             max_operating_counts = unit_counts.max()
+            avg_operating_counts = unit_counts.mean()  # 평균값 계산
             min_operating_unit = unit_counts.idxmin()
             max_operating_unit = unit_counts.idxmax()
 
@@ -108,6 +111,7 @@ if uploaded_file is not None and 'df' in locals():
             operating_times = filtered_df.groupby('차대 코드')['운영 시간(초)'].sum()
             min_operating_time = operating_times.min()
             max_operating_time = operating_times.max()
+            avg_operating_time = operating_times.mean()  # 평균값 계산
             min_time_unit = operating_times.idxmin()
             max_time_unit = operating_times.idxmax()
             
@@ -125,6 +129,7 @@ if uploaded_file is not None and 'df' in locals():
 
             min_operating_time_formatted = format_time(min_operating_time)
             max_operating_time_formatted = format_time(max_operating_time)
+            avg_operating_time_formatted = format_time(avg_operating_time)  # 평균값 시간 형식으로 추가
             total_operating_time_formatted = format_time(total_operating_time)
             
             summary = {
@@ -135,6 +140,7 @@ if uploaded_file is not None and 'df' in locals():
                 'max_counts': max_operating_counts,
                 'max_counts_unit': max_operating_unit,
                 'max_counts_ratio': max_operating_counts_ratio,
+                'avg_counts': avg_operating_counts,  # 평균값 추가
                 'total_time': total_operating_time_formatted,
                 'min_time': min_operating_time_formatted,
                 'min_time_unit': min_time_unit,
@@ -142,6 +148,7 @@ if uploaded_file is not None and 'df' in locals():
                 'max_time': max_operating_time_formatted,
                 'max_time_unit': max_time_unit,
                 'max_time_ratio': max_operating_time_ratio,
+                'avg_time': avg_operating_time_formatted,  # 평균값 시간 형식으로 추가
             }
         
         pivot_table = filtered_df.pivot_table(index=index_name, columns='시간대', values=value_name, aggfunc=agg_func).fillna(0)
@@ -188,6 +195,7 @@ if uploaded_file is not None and 'df' in locals():
             f"전체: {summary.get('total_units', 'N/A')}대<br>"
             f"최소: {summary.get('min_units_day', 'N/A')} {summary.get('min_units', 'N/A')}대 ({summary.get('min_units_ratio', 0):.2f}%)<br>"
             f"최대: {summary.get('max_units_day', 'N/A')} {summary.get('max_units', 'N/A')}대 ({summary.get('max_units_ratio', 0):.2f}%)<br>"
+            f"평균: {summary.get('avg_units', 'N/A'):.2f}대<br>"
         )
     else:
         summary_text = (
@@ -195,10 +203,12 @@ if uploaded_file is not None and 'df' in locals():
             f"전체: {summary.get('total_counts', 'N/A')}번<br>"
             f"최소: {summary.get('min_counts_unit', 'N/A')} {summary.get('min_counts', 'N/A')}번 ({summary.get('min_counts_ratio', 0):.2f}%)<br>"
             f"최대: {summary.get('max_counts_unit', 'N/A')} {summary.get('max_counts', 'N/A')}번 ({summary.get('max_counts_ratio', 0):.2f}%)<br>"
+            f"평균: {summary.get('avg_counts', 'N/A'):.2f}번<br>"
             f"<br><b>운영 시간</b><br>"
             f"전체: {summary.get('total_time', 'N/A')}<br>"
             f"최소: {summary.get('min_time_unit', 'N/A')} {summary.get('min_time', 'N/A')} ({summary.get('min_time_ratio', 0):.2f}%)<br>"
-            f"최대: {summary.get('max_time_unit', 'N/A')} {summary.get('max_time', 'N/A')} ({summary.get('max_time_ratio', 0):.2f}%)"
+            f"최대: {summary.get('max_time_unit', 'N/A')} {summary.get('max_time', 'N/A')} ({summary.get('max_time_ratio', 0):.2f}%)<br>"
+            f"평균: {summary.get('avg_time', 'N/A')}"
         )
     
     # 요약 정보 위치 조정 (그래프 높이에 따라)
