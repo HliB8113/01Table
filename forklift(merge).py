@@ -50,7 +50,7 @@ if uploaded_file is not None and 'df' in locals():
             filtered_df = filtered_df[filtered_df['작업 장소'] == workplace]
 
         if analysis_type == '운영 대수':
-            filtered_df['시작 날짜'] = filtered_df['시작 날짜'].dt.strftime('%m-%d')
+            filtered_df['시작 날짜'] = filtered_df['시작 날짜'].dt.strftime('%m-%d')  # 날짜를 MM-DD 형식으로 포맷팅
             index_name = '시작 날짜'
             value_name = '차대 코드'
             agg_func = 'nunique'
@@ -65,10 +65,10 @@ if uploaded_file is not None and 'df' in locals():
             max_operating_units = daily_counts.max()
             min_operating_day = daily_counts.idxmin()
             max_operating_day = daily_counts.idxmax()
-
+        
             # 평균 운영 대수 계산
             avg_units = daily_counts.mean()
-
+        
             summary = {
                 'total_units': total_operating_units,
                 'min_units': min_operating_units,
@@ -77,6 +77,7 @@ if uploaded_file is not None and 'df' in locals():
                 'max_units_day': max_operating_day,
                 'avg_units': avg_units  # 평균 값을 요약 정보에 추가
             }
+
         else:
             index_name = '차대 코드'
             value_name = '시작 날짜'
