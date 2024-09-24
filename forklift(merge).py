@@ -189,27 +189,33 @@ if uploaded_file is not None and 'df' in locals():
         fig.update_yaxes(type='category', tickmode='array', tickvals=sorted(pivot_table.index))
 
     # 요약 정보를 가로로 배치하여 표시
-    if analysis_type == '운영 대수':
-        summary_text = (
-            f"<b>운영 대수</b><br>"
-            f"전체: {summary.get('total_units', 'N/A')}대<br>"
-            f"최소: {summary.get('min_units_day', 'N/A')} {summary.get('min_units', 'N/A')}대 ({summary.get('min_units_ratio', 0):.2f}%)<br>"
-            f"최대: {summary.get('max_units_day', 'N/A')} {summary.get('max_units', 'N/A')}대 ({summary.get('max_units_ratio', 0):.2f}%)<br>"
-            f"평균: {summary.get('avg_units', 'N/A'):.2f}대<br>"
-        )
-    else:
-        summary_text = (
-            f"<b>운영 횟수</b><br>"
-            f"전체: {summary.get('total_counts', 'N/A')}번<br>"
-            f"최소: {summary.get('min_counts_unit', 'N/A')} {summary.get('min_counts', 'N/A')}번 ({summary.get('min_counts_ratio', 0):.2f}%)<br>"
-            f"최대: {summary.get('max_counts_unit', 'N/A')} {summary.get('max_counts', 'N/A')}번 ({summary.get('max_counts_ratio', 0):.2f}%)<br>"
-            f"평균: {summary.get('avg_counts', 'N/A'):.2f}번<br>"
-            f"<br><b>운영 시간</b><br>"
-            f"전체: {summary.get('total_time', 'N/A')}<br>"
-            f"최소: {summary.get('min_time_unit', 'N/A')} {summary.get('min_time', 'N/A')} ({summary.get('min_time_ratio', 0):.2f}%)<br>"
-            f"최대: {summary.get('max_time_unit', 'N/A')} {summary.get('max_time', 'N/A')} ({summary.get('max_time_ratio', 0):.2f}%)<br>"
-            f"평균: {summary.get('avg_time', 'N/A')}"
-        )
+    # 요약 정보를 표시하는 부분을 간소화하고, 평균값이 제대로 출력되도록 수정
+    def create_summary_text(summary, analysis_type):
+        if analysis_type == '운영 대수':
+            return f"""
+            <b>운영 대수</b><br>
+            전체: {summary['total_units']}대<br>
+            최소: {summary['min_units']}대 ({summary['min_units_ratio']:.2f}%) - {summary['min_units_day']}<br>
+            최대: {summary['max_units']}대 ({summary['max_units_ratio']:.2f}%) - {summary['max_units_day']}<br>
+            평균: {summary['avg_units']:.2f}대<br>
+            """
+        else:
+            return f"""
+            <b>운영 횟수</b><br>
+            전체: {summary['total_counts']}번<br>
+            최소: {summary['min_counts']}번 ({summary['min_counts_ratio']:.2f}%) - {summary['min_counts_unit']}<br>
+            최대: {summary['max_counts']}번 ({summary['max_counts_ratio']:.2f}%) - {summary['max_counts_unit']}<br>
+            평균: {summary['avg_counts']:.2f}번<br>
+            <br><b>운영 시간</b><br>
+            전체: {summary['total_time']}<br>
+            최소: {summary['min_time']} ({summary['min_time_ratio']:.2f}%) - {summary['min_time_unit']}<br>
+            최대: {summary['max_time']} ({summary['max_time_ratio']:.2f}%) - {summary['max_time_unit']}<br>
+            평균: {summary['avg_time']}<br>
+            """
+        
+# 각 분석 유형에 따라 요약 정보 생성
+summary_text = create_summary_text(summary, analysis_type)
+
     
     # 요약 정보 위치 조정 (그래프 높이에 따라)
     annotation_y = 1.015 + (150 / graph_height)
