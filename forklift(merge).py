@@ -98,7 +98,7 @@ if uploaded_file is not None and 'df' in locals():
         yaxis=dict(title=index_name, categoryorder='array', categoryarray=sorted(pivot_table.index)),
         plot_bgcolor='white',
         paper_bgcolor='white',
-        margin=dict(l=50, r=50, t=150, b50),
+        margin=dict(l=50, r=50, t=150, b=50),
         width=900,
         height=graph_height
     )
