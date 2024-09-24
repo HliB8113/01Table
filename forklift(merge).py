@@ -34,10 +34,6 @@ with st.sidebar:
         selected_workplace = st.selectbox('작업 장소 선택:', ['전체'] + sorted(df['작업 장소'].dropna().unique().tolist()))
         graph_height = st.slider('그래프 높이 선택', 300, 1500, 900)
 
-# 변수 초기화
-title = "분석 대기 중..."
-index_name = "데이터 선택"
-
 # 메인 페이지 설정
 if uploaded_file is not None and 'df' in locals():
     def generate_pivot(month, department, process, forklift_class, workplace):
@@ -73,18 +69,12 @@ if uploaded_file is not None and 'df' in locals():
             # 평균 운영 대수 계산
             avg_units = daily_counts.mean()
 
-            # 비율 계산
-            min_operating_units_ratio = (min_operating_units / total_operating_units) * 100
-            max_operating_units_ratio = (max_operating_units / total_operating_units) * 100
-            
             summary = {
                 'total_units': total_operating_units,
                 'min_units': min_operating_units,
                 'min_units_day': min_operating_day,
-                'min_units_ratio': min_operating_units_ratio,
                 'max_units': max_operating_units,
                 'max_units_day': max_operating_day,
-                'max_units_ratio': max_operating_units_ratio,
                 'avg_units': avg_units  # 평균 값을 요약 정보에 추가
             }
         else:
@@ -92,45 +82,29 @@ if uploaded_file is not None and 'df' in locals():
             value_name = '시작 날짜'
             agg_func = 'count'
             title = '지게차 시간대별 운영 횟수'
-        
+            
             # 월 최소 및 최대 운영 횟수 계산
-            unit_counts = filtered_df.groupby(['차대 코드'])[value_name].count()
+            unit_counts = filtered_df.groupby('차대 코드')[value_name].count()
             min_operating_counts = unit_counts.min()
             max_operating_counts = unit_counts.max()
             min_operating_unit = unit_counts.idxmin()
             max_operating_unit = unit_counts.idxmax()
-        
+
             # 평균 운영 횟수 계산
             avg_operating_counts = unit_counts.mean()
-        
+
             # 전체 운영 횟수 계산
             total_operating_counts = unit_counts.sum()
-        
-            # 운영 시간 계산
-            operating_times = filtered_df.groupby('차대 코드')['운영 시간(초)'].sum()
-            min_operating_time = operating_times.min()
-            max_operating_time = operating_times.max()
-            min_time_unit = operating_times.idxmin()
-            max_time_unit = operating_times.idxmax()
-        
-            # 평균 운영 시간 계산
-            avg_operating_time = operating_times.mean()
-        
+            
             summary = {
                 'total_counts': total_operating_counts,
                 'min_counts': min_operating_counts,
                 'min_counts_unit': min_operating_unit,
                 'max_counts': max_operating_counts,
                 'max_counts_unit': max_operating_unit,
-                'avg_counts': avg_operating_counts,  # 평균 운영 횟수를 요약 정보에 추가
-                'total_time': format_time(total_operating_time),
-                'min_time': format_time(min_operating_time),
-                'min_time_unit': min_time_unit,
-                'max_time': format_time(max_operating_time),
-                'max_time_unit': max_time_unit,
-                'avg_time': format_time(avg_operating_time)  # 평균 운영 시간을 요약 정보에 추가
+                'avg_counts': avg_operating_counts  # 평균 운영 횟수를 요약 정보에 추가
             }
-
+        
         pivot_table = filtered_df.pivot_table(index=index_name, columns='시간대', values=value_name, aggfunc=agg_func).fillna(0)
         return pivot_table, title, index_name, summary
 
@@ -164,32 +138,20 @@ if uploaded_file is not None and 'df' in locals():
         height=graph_height  # 조정 가능한 높이
     )
     
-    # 모든 '시작 날짜'를 세로축에 표시 (월일만 표시)
-    if analysis_type == '운영 대수':
-        fig.update_yaxes(type='category', tickmode='array', tickvals=sorted(pivot_table.index))
-
     # 요약 정보를 가로로 배치하여 표시
-    if analysis_type == '운영 대수':
-        summary_text = (
-            f"<b>운영 대수</b><br>"
-            f"전체: {summary.get('total_units', 'N/A')}대<br>"
-            f"최소: {summary.get('min_units_day', 'N/A')} {summary.get('min_units', 'N/A')}대 ({summary.get('min_units_ratio', 0):.2f}%)<br>"
-            f"최대: {summary.get('max_units_day', 'N/A')} {summary.get('max_units', 'N/A')}대 ({summary.get('max_units_ratio', 0):.2f}%)<br>"
-            f"평균: {summary.get('avg_units', 'N/A'):.2f}대<br>"
-        )
-    else:
-        summary_text = (
-            f"<b>운영 횟수</b><br>"
-            f"전체: {summary.get('total_counts', 'N/A')}번<br>"
-            f"최소: {summary.get('min_counts_unit', 'N/A')} {summary.get('min_counts', 'N/A')}번 ({summary.get('min_counts_ratio', 0):.2f}%)<br>"
-            f"최대: {summary.get('max_counts_unit', 'N/A')} {summary.get('max_counts', 'N/A')}번 ({summary.get('max_counts_ratio', 0):.2f}%)<br>"
-            f"평균 횟수: {summary.get('avg_counts', 'N/A'):.2f}번<br>"
-            f"<br><b>운영 시간</b><br>"
-            f"전체: {summary.get('total_time', 'N/A')}<br>"
-            f"최소: {summary.get('min_time_unit', 'N/A')} {summary.get('min_time', 'N/A')} ({summary.get('min_time_ratio', 0):.2f}%)<br>"
-            f"최대: {summary.get('max_time_unit', 'N/A')} {summary.get('max_time', 'N/A')} ({summary.get('max_time_ratio', 0):.2f}%)<br>"
-            f"평균 시간: {summary.get('avg_time', 'N/A')}<br>"
-        )
+    summary_text = (
+        f"<b>운영 대수</b><br>"
+        f"전체: {summary.get('total_units', 'N/A')}대<br>"
+        f"최소: {summary.get('min_units_day', 'N/A')} {summary.get('min_units', 'N/A')}대 ({summary.get('min_units_ratio', 0):.2f}%)<br>"
+        f"최대: {summary.get('max_units_day', 'N/A')} {summary.get('max_units', 'N/A')}대 ({summary.get('max_units_ratio', 0):.2f}%)<br>"
+        f"평균: {summary.get('avg_units', 'N/A'):.2f}대<br>"
+        if analysis_type == '운영 대수' else
+        f"<b>운영 횟수</b><br>"
+        f"전체: {summary.get('total_counts', 'N/A')}번<br>"
+        f"최소: {summary.get('min_counts_unit', 'N/A')} {summary.get('min_counts', 'N/A')}번 ({summary.get('min_counts_ratio', 0):.2f}%)<br>"
+        f"최대: {summary.get('max_counts_unit', 'N/A')} {summary.get('max_counts', 'N/A')}번 ({summary.get('max_counts_ratio', 0):.2f}%)<br>"
+        f"평균 횟수: {summary.get('avg_counts', 'N/A'):.2f}번<br>"
+    )
     
     # 요약 정보 위치 조정 (그래프 높이에 따라)
     annotation_y = 1.015 + (150 / graph_height)
