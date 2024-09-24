@@ -92,62 +92,45 @@ if uploaded_file is not None and 'df' in locals():
             value_name = '시작 날짜'
             agg_func = 'count'
             title = '지게차 시간대별 운영 횟수'
-            
+        
             # 월 최소 및 최대 운영 횟수 계산
-            unit_counts = filtered_df.groupby(['차대 코드'])['시작 날짜'].count()
+            unit_counts = filtered_df.groupby(['차대 코드'])[value_name].count()
             min_operating_counts = unit_counts.min()
             max_operating_counts = unit_counts.max()
             min_operating_unit = unit_counts.idxmin()
             max_operating_unit = unit_counts.idxmax()
-
+        
             # 평균 운영 횟수 계산
             avg_operating_counts = unit_counts.mean()
-
+        
             # 전체 운영 횟수 계산
             total_operating_counts = unit_counts.sum()
-            
+        
             # 운영 시간 계산
-            filtered_df['운영 시간(초)'] = filtered_df['운영 시간(초)'].astype(int)
             operating_times = filtered_df.groupby('차대 코드')['운영 시간(초)'].sum()
             min_operating_time = operating_times.min()
             max_operating_time = operating_times.max()
             min_time_unit = operating_times.idxmin()
             max_time_unit = operating_times.idxmax()
-            
+        
             # 평균 운영 시간 계산
             avg_operating_time = operating_times.mean()
-
-            # 전체 운영 시간 계산
-            total_operating_time = operating_times.sum()
-
-            def format_time(seconds):
-                hours, seconds = divmod(seconds, 3600)
-                minutes, seconds = divmod(seconds, 60)
-                return f"{hours:02}:{minutes:02}:{seconds:02}"
-
-            min_operating_time_formatted = format_time(min_operating_time)
-            max_operating_time_formatted = format_time(max_operating_time)
-            avg_operating_time_formatted = format_time(avg_operating_time)
-            
+        
             summary = {
                 'total_counts': total_operating_counts,
                 'min_counts': min_operating_counts,
                 'min_counts_unit': min_operating_unit,
-                'min_counts_ratio': min_operating_counts_ratio,
                 'max_counts': max_operating_counts,
                 'max_counts_unit': max_operating_unit,
-                'max_counts_ratio': max_operating_counts_ratio,
-                'total_time': format_time(total_operating_time),
-                'min_time': min_operating_time_formatted,
-                'min_time_unit': min_time_unit,
-                'min_time_ratio': min_operating_time_ratio,
-                'max_time': max_operating_time_formatted,
-                'max_time_unit': max_time_unit,
-                'max_time_ratio': max_operating_time_ratio,
                 'avg_counts': avg_operating_counts,  # 평균 운영 횟수를 요약 정보에 추가
-                'avg_time': avg_operating_time_formatted  # 평균 운영 시간을 요약 정보에 추가
+                'total_time': format_time(total_operating_time),
+                'min_time': format_time(min_operating_time),
+                'min_time_unit': min_time_unit,
+                'max_time': format_time(max_operating_time),
+                'max_time_unit': max_time_unit,
+                'avg_time': format_time(avg_operating_time)  # 평균 운영 시간을 요약 정보에 추가
             }
-        
+
         pivot_table = filtered_df.pivot_table(index=index_name, columns='시간대', values=value_name, aggfunc=agg_func).fillna(0)
         return pivot_table, title, index_name, summary
 
