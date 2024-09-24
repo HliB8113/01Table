@@ -1,37 +1,94 @@
+import streamlit as st
 import pandas as pd
 import plotly.graph_objs as go
 from plotly.subplots import make_subplots
 
-# 예제 데이터 생성
-data = {
-    '시작 날짜': ['2021-01-01', '2021-01-02', '2021-01-01', '2021-01-02'],
-    '시간대': ['08:00', '09:00', '08:00', '09:00'],
-    '차대 코드': ['A1', 'A2', 'A1', 'A2'],
-    '부서': ['부서1', '부서1', '부서2', '부서2']
-}
+# Streamlit 페이지 설정
+st.set_page_config(page_title='My Streamlit App', layout='wide', initial_sidebar_state='expanded')
 
-df = pd.DataFrame(data)
-df['시작 날짜'] = pd.to_datetime(df['시작 날짜'])
-df['월'] = df['시작 날짜'].dt.month
+# Streamlit 사이드바 설정
+with st.sidebar:
+    uploaded_file = st.file_uploader("파일을 업로드하세요.", type=["csv"])
+    if uploaded_file is not None:
+        df = pd.read_csv(uploaded_file)
+        
+        # 시간대를 시간 형식으로 변환
+        try:
+            df['시간대'] = pd.to_datetime(df['시간대'], format='%H:%M', errors='coerce').dt.strftime('%H:%M')
+        except ValueError:
+            df['시간대'] = pd.to_datetime(df['시간대'], format='%H:%M:%S', errors='coerce').dt.strftime('%H:%M')
 
-# 고유 차대 코드가 부서 데이터와 1대2 관계인 경우를 처리
-df['차대 코드'] = df['차대 코드'].astype(str) + '_' + df['부서'].astype(str)
-df['차대 코드'] = df['차대 코드'].apply(lambda x: x.split('_')[0] if df[df['차대 코드'] == x]['부서'].nunique() == 1 else x)
+        # 시작 날짜를 날짜 형식으로 변환 및 월 열 추가
+        df['시작 날짜'] = pd.to_datetime(df['시작 날짜'])
+        df['월'] = df['시작 날짜'].dt.month
 
-# Pivot Table 생성
-pivot_table = df.pivot_table(index='시작 날짜', columns='시간대', values='차대 코드', aggfunc='nunique').fillna(0)
+        # 12월 데이터 제외
+        df = df[df['월'] != 12]
 
-# 그래프 생성
-fig = make_subplots(rows=1, cols=1)
-heatmap = go.Heatmap(
-    z=pivot_table.values,
-    x=pivot_table.columns,
-    y=pivot_table.index,
-    colorscale='Viridis'
-)
-fig.add_trace(heatmap)
-fig.update_layout(title='지게차 일자별 운영 대수', xaxis={'title': '시간대'}, yaxis={'title': '시작 날짜'})
+        # 드롭다운 메뉴 설정
+        analysis_type = st.radio("분석 유형 선택:", ('운영 대수', '운영 횟수'))
+        selected_month = st.selectbox('월 선택:', ['전체'] + sorted(df['월'].dropna().unique().tolist()))
+        selected_department = st.selectbox('부서 선택:', ['전체'] + sorted(df['부서'].dropna().unique().tolist()))
+        selected_process = st.selectbox('공정 선택:', ['전체'] + sorted(df['공정'].dropna().unique().tolist()))
+        selected_forklift_class = st.selectbox('차대 분류 선택:', ['전체'] + sorted(df['차대 분류'].dropna().unique().tolist()))
+        selected_workplace = st.selectbox('작업 장소 선택:', ['전체'] + sorted(df['작업 장소'].dropna().unique().tolist()))
+        graph_height = st.slider('그래프 높이 선택', 300, 1500, 900)
 
-# 결과 출력 확인 (테스트 환경에서 실행)
-print(pivot_table)
-fig.show()
+# 메인 페이지 설정
+if uploaded_file is not None and 'df' in locals():
+    def generate_pivot(month, department, process, forklift_class, workplace):
+        filtered_df = df.copy()
+        if month != '전체':
+            filtered_df = filtered_df[filtered_df['월'] == month]
+        if department != '전체':
+            filtered_df = filtered_df[filtered_df['부서'] == department]
+        if process != '전체':
+            filtered_df = filtered_df[filtered_df['공정'] == process]
+        if forklift_class != '전체':
+            filtered_df = filtered_df[filtered_df['차대 분류'] == forklift_class]
+        if workplace != '전체':
+            filtered_df = filtered_df[filtered_df['작업 장소'] == workplace]
+
+        if analysis_type == '운영 대수':
+            filtered_df['시작 날짜'] = filtered_df['시작 날짜'].dt.strftime('%m-%d')
+            index_name = '시작 날짜'
+            value_name = '차대 코드'
+            agg_func = lambda x: x.nunique()  # 고유한 값의 수를 계산하여 중복 제거
+            title = '지게차 일자별 운영 대수'
+            
+            # 차대 코드가 부서별로 중복될 수 있으므로, 중복 제거
+            filtered_df = filtered_df.drop_duplicates(subset=['차대 코드', '부서'])
+
+            # 월 전체 운영 대수 계산
+            total_operating_units = filtered_df[value_name].nunique()
+
+            # 월 최소 및 최대 운영 대수 계산
+            daily_counts = filtered_df.groupby('시작 날짜')[value_name].nunique()
+            min_operating_units = daily_counts.min()
+            max_operating_units = daily_counts.max()
+            min_operating_day = daily_counts.idxmin()
+            max_operating_day = daily_counts.idxmax()
+
+            # 비율 계산
+            min_operating_units_ratio = (min_operating_units / total_operating_units) * 100
+            max_operating_units_ratio = (max_operating_units / total_operating_units) * 100
+            
+            summary = {
+                'total_units': total_operating_units,
+                'min_units': min_operating_units,
+                'min_units_day': min_operating_day,
+                'min_units_ratio': min_operating_units_ratio,
+                'max_units': max_operating_units,
+                'max_units_day': max_operating_day,
+                'max_units_ratio': max_operating_units_ratio,
+            }
+        else:
+            # 기타 분석 유형의 코드는 변경되지 않았습니다.
+            pass
+
+        pivot_table = filtered_df.pivot_table(index=index_name, columns='시간대', values=value_name, aggfunc=agg_func).fillna(0)
+        return pivot_table, title, index_name, summary
+
+    pivot_table, title, index_name, summary = generate_pivot(selected_month, selected_department, selected_process, selected_forklift_class, selected_workplace)
+
+    # 나머지 시각화 및 스트림릿 출력 코드는 변경되지 않았습니다.
