@@ -19,8 +19,8 @@ with st.sidebar:
             df['시간대'] = pd.to_datetime(df['시간대'], format='%H:%M:%S', errors='coerce').dt.strftime('%H:%M')
 
         # 시작 날짜를 날짜 형식으로 변환 및 월 열 추가
-        df['시작 날짜'] = pd.to_datetime(df['시작 날짜']).dt.strftime('%m-%d')
-        df['월'] = pd.to_datetime(df['시작 날짜'], format='%m-%d').dt.month
+        df['시작 날짜'] = pd.to_datetime(df['시작 날짜'])
+        df['월'] = df['시작 날짜'].dt.month
 
         # 12월 데이터 제외
         df = df[df['월'] != 12]
@@ -33,6 +33,10 @@ with st.sidebar:
         selected_forklift_class = st.selectbox('차대 분류 선택:', ['전체'] + sorted(df['차대 분류'].dropna().unique().tolist()))
         selected_workplace = st.selectbox('작업 장소 선택:', ['전체'] + sorted(df['작업 장소'].dropna().unique().tolist()))
         graph_height = st.slider('그래프 높이 선택', 300, 1500, 900)
+
+# 변수 초기화
+title = "분석 대기 중..."
+index_name = "데이터 선택"
 
 # 메인 페이지 설정
 if uploaded_file is not None and 'df' in locals():
@@ -50,6 +54,7 @@ if uploaded_file is not None and 'df' in locals():
             filtered_df = filtered_df[filtered_df['작업 장소'] == workplace]
 
         if analysis_type == '운영 대수':
+            filtered_df['시작 날짜'] = filtered_df['시작 날짜'].dt.strftime('%m-%d')
             index_name = '시작 날짜'
             value_name = '차대 코드'
             agg_func = 'nunique'
@@ -128,4 +133,35 @@ if uploaded_file is not None and 'df' in locals():
         height=graph_height  # 조정 가능한 높이
     )
 
+    # 요약 정보를 가로로 배치하여 표시
+    summary_text = (
+        f"<b>운영 대수</b><br>"
+        f"전체: {summary.get('total_units', 'N/A')}대<br>"
+        f"최소: {summary.get('min_units_day', 'N/A')} {summary.get('min_units', 'N/A')}대<br>"
+        f"최대: {summary.get('max_units_day', 'N/A')} {summary.get('max_units', 'N/A')}대<br>"
+        f"평균: {summary.get('avg_units', 0):.2f}대<br>"  # 평균 정보 표시 추가
+    ) if analysis_type == '운영 대수' else (
+        f"<b>운영 횟수</b><br>"
+        f"전체: {summary.get('total_counts', 'N/A')}번<br>"
+        f"최소: {summary.get('min_counts_unit', 'N/A')} {summary.get('min_counts', 'N/A')}번<br>"
+        f"최대: {summary.get('max_counts_unit', 'N/A')} {summary.get('max_counts', 'N/A')}번<br>"
+        f"평균: {summary.get('avg_counts', 0):.2f}번<br>"  # 평균 정보 표시 추가
+    )
+
+    fig.add_annotation(
+        text=summary_text,
+        align='left',
+        showarrow=False,
+        xref='paper',
+        yref='paper',
+        x=0,
+        y=1.15,
+        bordercolor='black',
+        borderwidth=1,
+        bgcolor='white',
+        opacity=0.8,
+        font=dict(color='black', size=12)  # 텍스트 색상을 검은색으로 지정, 폰트 크기 조정
+    )
+
+    # Streamlit을 통해 플롯 보여주기
     st.plotly_chart(fig, use_container_width=True)
