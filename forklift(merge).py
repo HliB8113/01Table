@@ -177,32 +177,47 @@ if uploaded_file is not None and 'df' in locals():
         height=graph_height  # 조정 가능한 높이
     )
     
-    # 모든 '시작 날짜'를 세로축에 표시 (월일만 표시)
     if analysis_type == '운영 대수':
-        fig.update_yaxes(type='category', tickmode='array', tickvals=sorted(pivot_table.index))
-
-    # 요약 정보를 가로로 배치하여 표시
-    if analysis_type == '운영 대수':
-        summary_text = (
-            f"<b>운영 대수</b><br>"
-            f"전체: {summary.get('total_units', 'N/A')}대<br>"
-            f"최소: {summary.get('min_units_day', 'N/A')} {summary.get('min_units', 'N/A')}대 ({summary.get('min_units_ratio', 0):.2f}%)<br>"
-            f"최대: {summary.get('max_units_day', 'N/A')} {summary.get('max_units', 'N/A')}대 ({summary.get('max_units_ratio', 0):.2f}%)<br>"
-        )
-    else:
-        summary_text = (
-            f"<b>운영 횟수</b><br>"
-            f"전체: {summary.get('total_counts', 'N/A')}번<br>"
-            f"최소: {summary.get('min_counts_unit', 'N/A')} {summary.get('min_counts', 'N/A')}번 ({summary.get('min_counts_ratio', 0):.2f}%)<br>"
-            f"최대: {summary.get('max_counts_unit', 'N/A')} {summary.get('max_counts', 'N/A')}번 ({summary.get('max_counts_ratio', 0):.2f}%)<br>"
-            f"<br><b>운영 시간</b><br>"
-            f"전체: {summary.get('total_time', 'N/A')}<br>"
-            f"최소: {summary.get('min_time_unit', 'N/A')} {summary.get('min_time', 'N/A')} ({summary.get('min_time_ratio', 0):.2f}%)<br>"
-            f"최대: {summary.get('max_time_unit', 'N/A')} {summary.get('max_time', 'N/A')} ({summary.get('max_time_ratio', 0):.2f}%)"
-        )
+    # 평균 운영 대수 계산
+    average_operating_units = daily_counts.mean()
     
-    # 요약 정보 위치 조정 (그래프 높이에 따라)
-    annotation_y = 1.015 + (150 / graph_height)
+    # 평균값을 요약 정보에 추가
+    summary['average_units'] = average_operating_units
+    
+    # 요약 텍스트에 평균 운영 대수 추가
+    summary_text = (
+        f"<b>운영 대수</b><br>"
+        f"전체: {summary.get('total_units', 'N/A')}대<br>"
+        f"최소: {summary.get('min_units_day', 'N/A')} {summary.get('min_units', 'N/A')}대 ({summary.get('min_units_ratio', 0):.2f}%)<br>"
+        f"최대: {summary.get('max_units_day', 'N/A')} {summary.get('max_units', 'N/A')}대 ({summary.get('max_units_ratio', 0):.2f}%)<br>"
+        f"평균: {average_operating_units:.2f}대<br>"
+    )
+else:
+    # 평균 운영 횟수 계산
+    average_operating_counts = unit_counts.mean()
+    
+    # 평균 운영 시간 계산
+    average_operating_time = operating_times.mean()
+    average_operating_time_formatted = format_time(average_operating_time)
+    
+    # 평균값을 요약 정보에 추가
+    summary['average_counts'] = average_operating_counts
+    summary['average_time'] = average_operating_time_formatted
+    
+    # 요약 텍스트에 평균 운영 횟수 및 시간 추가
+    summary_text = (
+        f"<b>운영 횟수</b><br>"
+        f"전체: {summary.get('total_counts', 'N/A')}번<br>"
+        f"최소: {summary.get('min_counts_unit', 'N/A')} {summary.get('min_counts', 'N/A')}번 ({summary.get('min_counts_ratio', 0):.2f}%)<br>"
+        f"최대: {summary.get('max_counts_unit', 'N/A')} {summary.get('max_counts', 'N/A')}번 ({summary.get('max_counts_ratio', 0):.2f}%)<br>"
+        f"평균: {average_operating_counts:.2f}번<br>"
+        f"<br><b>운영 시간</b><br>"
+        f"전체: {summary.get('total_time', 'N/A')}<br>"
+        f"최소: {summary.get('min_time_unit', 'N/A')} {summary.get('min_time', 'N/A')} ({summary.get('min_time_ratio', 0):.2f}%)<br>"
+        f"최대: {summary.get('max_time_unit', 'N/A')} {summary.get('max_time', 'N/A')} ({summary.get('max_time_ratio', 0):.2f}%)<br>"
+        f"평균: {average_operating_time_formatted}<br>"
+    )
+
 
     fig.add_annotation(
         text=summary_text,
