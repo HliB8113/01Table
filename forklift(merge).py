@@ -11,13 +11,10 @@ with st.sidebar:
     uploaded_file = st.file_uploader("파일을 업로드하세요.", type=["csv"])
     if uploaded_file is not None:
         df = pd.read_csv(uploaded_file)
-
+        
         # 시간대를 시간 형식으로 변환
-        try:
-            df['시간대'] = pd.to_datetime(df['시간대'], format='%H:%M', errors='coerce').dt.strftime('%H:%M')
-        except ValueError:
-            df['시간대'] = pd.to_datetime(df['시간대'], format='%H:%M:%S', errors='coerce').dt.strftime('%H:%M')
-
+        df['시간대'] = pd.to_datetime(df['시간대'], format='%H:%M:%S', errors='coerce').dt.time
+        
         # 시작 날짜를 날짜 형식으로 변환 및 월 열 추가
         df['시작 날짜'] = pd.to_datetime(df['시작 날짜'])
         df['월'] = df['시작 날짜'].dt.month
@@ -54,18 +51,27 @@ if uploaded_file is not None and 'df' in locals():
             filtered_df = filtered_df[filtered_df['작업 장소'] == workplace]
 
         if analysis_type == '운영 대수':
-            filtered_df['시작 날짜'] = filtered_df['시작 날짜'].dt.strftime('%m-%d')
             index_name = '시작 날짜'
             value_name = '차대 코드'
             agg_func = 'nunique'
             title = '지게차 일자별 운영 대수'
             
-            # 평균값 계산
-            daily_counts = filtered_df.groupby('시작 날짜')[value_name].nunique()
-            avg_operating_units = daily_counts.mean()
-            
+            # 전체, 최소, 최대, 평균 운영 대수 계산
+            total_operating_units = filtered_df[value_name].nunique()
+            daily_counts = filtered_df.groupby(index_name)[value_name].nunique()
+            min_operating_units = daily_counts.min()
+            max_operating_units = daily_counts.max()
+            average_operating_units = daily_counts.mean()
+            min_operating_day = daily_counts.idxmin()
+            max_operating_day = daily_counts.idxmax()
+
             summary = {
-                'avg_units': avg_operating_units
+                'total_units': total_operating_units,
+                'min_units': min_operating_units,
+                'min_units_day': min_operating_day,
+                'max_units': max_operating_units,
+                'max_units_day': max_operating_day,
+                'average_units': average_operating_units
             }
         else:
             index_name = '차대 코드'
@@ -73,19 +79,39 @@ if uploaded_file is not None and 'df' in locals():
             agg_func = 'count'
             title = '지게차 시간대별 운영 횟수'
             
-            # 평균값 계산
-            unit_counts = filtered_df.groupby(['차대 코드'])['시작 날짜'].count()
-            avg_operating_counts = unit_counts.mean()
-
+            # 전체, 최소, 최대, 평균 운영 횟수 및 운영 시간 계산
+            unit_counts = filtered_df.groupby(index_name)[value_name].count()
+            total_operating_counts = unit_counts.sum()
+            min_operating_counts = unit_counts.min()
+            max_operating_counts = unit_counts.max()
+            average_operating_counts = unit_counts.mean()
+            min_operating_unit = unit_counts.idxmin()
+            max_operating_unit = unit_counts.idxmax()
+            
             filtered_df['운영 시간(초)'] = filtered_df['운영 시간(초)'].astype(int)
-            operating_times = filtered_df.groupby('차대 코드')['운영 시간(초)'].sum()
-            avg_operating_time = operating_times.mean()
+            operating_times = filtered_df.groupby(index_name)['운영 시간(초)'].sum()
+            total_operating_time = operating_times.sum()
+            min_operating_time = operating_times.min()
+            max_operating_time = operating_times.max()
+            average_operating_time = operating_times.mean()
+            min_time_unit = operating_times.idxmin()
+            max_time_unit = operating_times.idxmax()
 
             summary = {
-                'avg_counts': avg_operating_counts,
-                'avg_time': avg_operating_time
+                'total_counts': total_operating_counts,
+                'min_counts': min_operating_counts,
+                'min_counts_unit': min_operating_unit,
+                'max_counts': max_operating_counts,
+                'max_counts_unit': max_operating_unit,
+                'average_counts': average_operating_counts,
+                'total_time': total_operating_time,
+                'min_time': min_operating_time,
+                'min_time_unit': min_time_unit,
+                'max_time': max_operating_time,
+                'max_time_unit': max_time_unit,
+                'average_time': average_operating_time
             }
-
+        
         pivot_table = filtered_df.pivot_table(index=index_name, columns='시간대', values=value_name, aggfunc=agg_func).fillna(0)
         return pivot_table, title, index_name, summary
 
@@ -117,29 +143,6 @@ if uploaded_file is not None and 'df' in locals():
         margin=dict(l=50, r=50, t=150, b=50),
         width=900,  # 고정된 너비
         height=graph_height  # 조정 가능한 높이
-    )
-
-    # 요약 정보 추가
-    if analysis_type == '운영 대수':
-        avg_text = f"평균: {summary.get('avg_units', 'N/A'):.2f}대"
-    else:
-        avg_text = (
-            f"평균 횟수: {summary.get('avg_counts', 'N/A'):.2f}번<br>"
-            f"평균 시간: {summary.get('avg_time', 'N/A'):.2f}초"
-        )
-    fig.add_annotation(
-        text=avg_text,
-        align='left',
-        showarrow=False,
-        xref='paper',
-        yref='paper',
-        x=0,
-        y=1.1,  # Adjust the position based on the height of your graph
-        bordercolor='black',
-        borderwidth=1,
-        bgcolor='white',
-        opacity=0.8,
-        font=dict(color='black', size=20)
     )
 
     # Streamlit을 통해 플롯 보여주기
