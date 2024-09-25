@@ -31,10 +31,6 @@ with st.sidebar:
         selected_workplace = st.selectbox('작업 장소 선택:', ['전체'] + sorted(df['작업 장소'].dropna().unique().tolist()))
         graph_height = st.slider('그래프 높이 선택', 300, 1500, 900)
 
-# 변수 초기화
-title = "분석 대기 중..."
-index_name = "데이터 선택"
-
 # 메인 페이지 설정
 if uploaded_file is not None and 'df' in locals():
     def generate_pivot(month, department, process, forklift_class, workplace):
@@ -55,95 +51,49 @@ if uploaded_file is not None and 'df' in locals():
             value_name = '차대 코드'
             agg_func = 'nunique'
             title = '지게차 일자별 운영 대수'
-            
-            # 전체, 최소, 최대, 평균 운영 대수 계산
-            total_operating_units = filtered_df[value_name].nunique()
-            daily_counts = filtered_df.groupby(index_name)[value_name].nunique()
-            min_operating_units = daily_counts.min()
-            max_operating_units = daily_counts.max()
-            average_operating_units = daily_counts.mean()
-            min_operating_day = daily_counts.idxmin()
-            max_operating_day = daily_counts.idxmax()
-
-            summary = {
-                'total_units': total_operating_units,
-                'min_units': min_operating_units,
-                'min_units_day': min_operating_day,
-                'max_units': max_operating_units,
-                'max_units_day': max_operating_day,
-                'average_units': average_operating_units
-            }
         else:
             index_name = '차대 코드'
             value_name = '시작 날짜'
             agg_func = 'count'
             title = '지게차 시간대별 운영 횟수'
-            
-            # 전체, 최소, 최대, 평균 운영 횟수 및 운영 시간 계산
-            unit_counts = filtered_df.groupby(index_name)[value_name].count()
-            total_operating_counts = unit_counts.sum()
-            min_operating_counts = unit_counts.min()
-            max_operating_counts = unit_counts.max()
-            average_operating_counts = unit_counts.mean()
-            min_operating_unit = unit_counts.idxmin()
-            max_operating_unit = unit_counts.idxmax()
-            
-            filtered_df['운영 시간(초)'] = filtered_df['운영 시간(초)'].astype(int)
-            operating_times = filtered_df.groupby(index_name)['운영 시간(초)'].sum()
-            total_operating_time = operating_times.sum()
-            min_operating_time = operating_times.min()
-            max_operating_time = operating_times.max()
-            average_operating_time = operating_times.mean()
-            min_time_unit = operating_times.idxmin()
-            max_time_unit = operating_times.idxmax()
-
-            summary = {
-                'total_counts': total_operating_counts,
-                'min_counts': min_operating_counts,
-                'min_counts_unit': min_operating_unit,
-                'max_counts': max_operating_counts,
-                'max_counts_unit': max_operating_unit,
-                'average_counts': average_operating_counts,
-                'total_time': total_operating_time,
-                'min_time': min_operating_time,
-                'min_time_unit': min_time_unit,
-                'max_time': max_operating_time,
-                'max_time_unit': max_time_unit,
-                'average_time': average_operating_time
-            }
         
         pivot_table = filtered_df.pivot_table(index=index_name, columns='시간대', values=value_name, aggfunc=agg_func).fillna(0)
-        return pivot_table, title, index_name, summary
+        if pivot_table.empty:
+            st.error("Selected filters result in no data. Please adjust your filters.")
+            return None, None, None, None
+        return pivot_table, title, index_name, {}
 
-    pivot_table, title, index_name, summary = generate_pivot(selected_month, selected_department, selected_process, selected_forklift_class, selected_workplace)
+    pivot_data = generate_pivot(selected_month, selected_department, selected_process, selected_forklift_class, selected_workplace)
+    if pivot_data[0] is not None:
+        pivot_table, title, index_name, summary = pivot_data
 
-    # Heatmap 생성
-    fig = make_subplots(rows=1, cols=1)
-    tooltip_texts = [[f'{analysis_type} {int(val)}{"대" if analysis_type == "운영 대수" else "번"}' for val in row] for row in pivot_table.values]
-    heatmap = go.Heatmap(
-        z=pivot_table.values,
-        x=pivot_table.columns,
-        y=pivot_table.index,
-        colorscale=[[0, 'white'], [1, 'purple']],
-        hoverinfo='text',
-        text=tooltip_texts,
-        zmin=0,
-        zmax=pivot_table.values.max()
-    )
-    fig.add_trace(heatmap)
-    fig.update_layout(
-        title={
-            'text': title,
-            'x': 0.5
-        },
-        xaxis=dict(title='시간대', fixedrange=True),
-        yaxis=dict(title=index_name, categoryorder='array', categoryarray=sorted(pivot_table.index)),
-        plot_bgcolor='white',
-        paper_bgcolor='white',
-        margin=dict(l=50, r=50, t=150, b=50),
-        width=900,  # 고정된 너비
-        height=graph_height  # 조정 가능한 높이
-    )
+        # Heatmap 생성
+        fig = make_subplots(rows=1, cols=1)
+        tooltip_texts = [[f'{analysis_type} {int(val)}{"대" if analysis_type == "운영 대수" else "번"}' for val in row] for row in pivot_table.values]
+        heatmap = go.Heatmap(
+            z=pivot_table.values,
+            x=pivot_table.columns,
+            y=pivot_table.index,
+            colorscale=[[0, 'white'], [1, 'purple']],
+            hoverinfo='text',
+            text=tooltip_texts,
+            zmin=0,
+            zmax=pivot_table.values.max() if not pivot_table.empty else 1  # Default max if empty
+        )
+        fig.add_trace(heatmap)
+        fig.update_layout(
+            title={
+                'text': title,
+                'x': 0.5
+            },
+            xaxis=dict(title='시간대', fixedrange=True),
+            yaxis=dict(title=index_name, categoryorder='array', categoryarray=sorted(pivot_table.index)),
+            plot_bgcolor='white',
+            paper_bgcolor='white',
+            margin=dict(l=50, r50, t150, b50),
+            width=900,  # 고정된 너비
+            height=graph_height  # 조정 가능한 높이
+        )
 
-    # Streamlit을 통해 플롯 보여주기
-    st.plotly_chart(fig, use_container_width=True)
+        # Streamlit을 통해 플롯 보여주기
+        st.plotly_chart(fig, use_container_width=True)
