@@ -85,6 +85,7 @@ if uploaded_file is not None and 'df' in locals():
                 'max_units_day': max_operating_day,
                 'max_units_ratio': max_operating_units_ratio,
                 'avg_units': avg_operating_units,
+                'avg_units_ratio' : avg_operating_units_ratio
             }
         else:
             index_name = '차대 코드'
@@ -144,6 +145,7 @@ if uploaded_file is not None and 'df' in locals():
                 'max_counts_unit': max_operating_unit,
                 'max_counts_ratio': max_operating_counts_ratio,
                 'avg_counts': avg_operating_counts,
+                'avg_counts_ratio': avg_operating_counts_ratio
                 'total_time': total_operating_time_formatted,
                 'min_time': min_operating_time_formatted,
                 'min_time_unit': min_time_unit,
@@ -152,6 +154,7 @@ if uploaded_file is not None and 'df' in locals():
                 'max_time_unit': max_time_unit,
                 'max_time_ratio': max_operating_time_ratio,
                 'avg_time': avg_operating_time_formatted,
+                'avg_time_ratio': avg_operating_time_ratio
             }
         
         pivot_table = filtered_df.pivot_table(index=index_name, columns='시간대', values=value_name, aggfunc=agg_func).fillna(0)
