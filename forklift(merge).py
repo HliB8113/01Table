@@ -69,7 +69,7 @@ if uploaded_file is not None and 'df' in locals():
             max_operating_units = daily_counts.max()
             min_operating_day = daily_counts.idxmin()
             max_operating_day = daily_counts.idxmax()
-            avg_operating_units = daily_counts.mean()
+            avg_operating_units = round(daily_counts.mean())
 
             # 비율 계산
             min_operating_units_ratio = (min_operating_units / total_operating_units) * 100
