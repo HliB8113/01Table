@@ -34,6 +34,10 @@ with st.sidebar:
         selected_workplace = st.selectbox('작업 장소 선택:', ['전체'] + sorted(df['작업 장소'].dropna().unique().tolist()))
         graph_height = st.slider('그래프 높이 선택', 300, 1500, 900)
 
+# 변수 초기화
+title = "분석 대기 중..."
+index_name = "데이터 선택"
+
 # 메인 페이지 설정
 if uploaded_file is not None and 'df' in locals():
     def generate_pivot(month, department, process, forklift_class, workplace):
@@ -58,20 +62,26 @@ if uploaded_file is not None and 'df' in locals():
             
             # 월 전체 운영 대수 계산
             total_operating_units = filtered_df[value_name].nunique()
+            
+            # 월 최소 및 최대 운영 대수 계산
             daily_counts = filtered_df.groupby('시작 날짜')[value_name].nunique()
             min_operating_units = daily_counts.min()
             max_operating_units = daily_counts.max()
             min_operating_day = daily_counts.idxmin()
             max_operating_day = daily_counts.idxmax()
-            average_operating_units = daily_counts.mean()
+
+            # 비율 계산
+            min_operating_units_ratio = (min_operating_units / total_operating_units) * 100
+            max_operating_units_ratio = (max_operating_units / total_operating_units) * 100
             
             summary = {
                 'total_units': total_operating_units,
                 'min_units': min_operating_units,
                 'min_units_day': min_operating_day,
+                'min_units_ratio': min_operating_units_ratio,
                 'max_units': max_operating_units,
                 'max_units_day': max_operating_day,
-                'average_units': average_operating_units
+                'max_units_ratio': max_operating_units_ratio,
             }
         else:
             index_name = '차대 코드'
@@ -80,22 +90,34 @@ if uploaded_file is not None and 'df' in locals():
             title = '지게차 시간대별 운영 횟수'
             
             # 월 최소 및 최대 운영 횟수 계산
-            unit_counts = filtered_df.groupby(['차대 코드'])[value_name].count()
+            unit_counts = filtered_df.groupby(['차대 코드'])['시작 날짜'].count()
             min_operating_counts = unit_counts.min()
             max_operating_counts = unit_counts.max()
             min_operating_unit = unit_counts.idxmin()
             max_operating_unit = unit_counts.idxmax()
-            average_operating_counts = unit_counts.mean()
+
+            # 전체 운영 횟수 계산
+            total_operating_counts = unit_counts.sum()
+            
+            # 비율 계산
+            min_operating_counts_ratio = (min_operating_counts / total_operating_counts) * 100
+            max_operating_counts_ratio = (max_operating_counts / total_operating_counts) * 100
             
             # 운영 시간 계산
             filtered_df['운영 시간(초)'] = filtered_df['운영 시간(초)'].astype(int)
             operating_times = filtered_df.groupby('차대 코드')['운영 시간(초)'].sum()
             min_operating_time = operating_times.min()
             max_operating_time = operating_times.max()
-            average_operating_time = operating_times.mean()
             min_time_unit = operating_times.idxmin()
             max_time_unit = operating_times.idxmax()
+            
+            # 전체 운영 시간 계산
+            total_operating_time = operating_times.sum()
 
+            # 비율 계산
+            min_operating_time_ratio = (min_operating_time / total_operating_time) * 100
+            max_operating_time_ratio = (max_operating_time / total_operating_time) * 100
+            
             def format_time(seconds):
                 hours, seconds = divmod(seconds, 3600)
                 minutes, seconds = divmod(seconds, 60)
@@ -103,21 +125,23 @@ if uploaded_file is not None and 'df' in locals():
 
             min_operating_time_formatted = format_time(min_operating_time)
             max_operating_time_formatted = format_time(max_operating_time)
-            average_operating_time_formatted = format_time(average_operating_time)
+            total_operating_time_formatted = format_time(total_operating_time)
             
             summary = {
-                'total_counts': unit_counts.sum(),
+                'total_counts': total_operating_counts,
                 'min_counts': min_operating_counts,
                 'min_counts_unit': min_operating_unit,
+                'min_counts_ratio': min_operating_counts_ratio,
                 'max_counts': max_operating_counts,
                 'max_counts_unit': max_operating_unit,
-                'average_counts': average_operating_counts,
-                'total_time': format_time(operating_times.sum()),
+                'max_counts_ratio': max_operating_counts_ratio,
+                'total_time': total_operating_time_formatted,
                 'min_time': min_operating_time_formatted,
                 'min_time_unit': min_time_unit,
+                'min_time_ratio': min_operating_time_ratio,
                 'max_time': max_operating_time_formatted,
                 'max_time_unit': max_time_unit,
-                'average_time': average_operating_time_formatted
+                'max_time_ratio': max_operating_time_ratio,
             }
         
         pivot_table = filtered_df.pivot_table(index=index_name, columns='시간대', values=value_name, aggfunc=agg_func).fillna(0)
@@ -149,7 +173,64 @@ if uploaded_file is not None and 'df' in locals():
         plot_bgcolor='white',
         paper_bgcolor='white',
         margin=dict(l=50, r=50, t=150, b=50),
-        width=900,
-        height=graph_height
+        width=900,  # 고정된 너비
+        height=graph_height  # 조정 가능한 높이
     )
+    
+    # 모든 '시작 날짜'를 세로축에 표시 (월일만 표시)
+    if analysis_type == '운영 대수':
+        fig.update_yaxes(type='category', tickmode='array', tickvals=sorted(pivot_table.index))
+
+    # 요약 정보를 가로로 배치하여 표시
+    # '운영 대수' 분석 시
+    if analysis_type == '운영 대수':
+        average_operating_units = daily_counts.mean()
+        summary['average_units'] = average_operating_units
+        summary_text = (
+            f"<b>운영 대수</b><br>"
+            f"전체: {summary.get('total_units', 'N/A')}대<br>"
+            f"평균: {summary.get('average_units', 'N/A'):.2f}대<br>"
+            f"최소: {summary.get('min_units_day', 'N/A')} {summary.get('min_units', 'N/A')}대 ({summary.get('min_units_ratio', 0):.2f}%)<br>"
+            f"최대: {summary.get('max_units_day', 'N/A')} {summary.get('max_units', 'N/A')}대 ({summary.get('max_units_ratio', 0):.2f}%)<br>"
+        )
+    
+    # '운영 횟수' 분석 시
+    else:
+        average_operating_counts = unit_counts.mean()
+        average_operating_time = operating_times.mean()
+        summary['average_counts'] = average_operating_counts
+        summary['average_time'] = format_time(average_operating_time)
+        summary_text = (
+            f"<b>운영 횟수</b><br>"
+            f"전체: {summary.get('total_counts', 'N/A')}번<br>"
+            f"평균: {summary.get('average_counts', 'N/A'):.2f}번<br>"
+            f"최소: {summary.get('min_counts_unit', 'N/A')} {summary.get('min_counts', 'N/A')}번 ({summary.get('min_counts_ratio', 0):.2f}%)<br>"
+            f"최대: {summary.get('max_counts_unit', 'N/A')} {summary.get('max_counts', 'N/A')}번 ({summary.get('max_counts_ratio', 0):.2f}%)<br>"
+            f"<br><b>운영 시간</b><br>"
+            f"전체: {summary.get('total_time', 'N/A')}<br>"
+            f"평균: {summary.get('average_time', 'N/A')}<br>"
+            f"최소: {summary.get('min_time_unit', 'N/A')} {summary.get('min_time', 'N/A')} ({summary.get('min_time_ratio', 0):.2f}%)<br>"
+            f"최대: {summary.get('max_time_unit', 'N/A')} {summary.get('max_time', 'N/A')} ({summary.get('max_time_ratio', 0):.2f}%)"
+        )
+
+    
+    # 요약 정보 위치 조정 (그래프 높이에 따라)
+    annotation_y = 1.015 + (150 / graph_height)
+
+    fig.add_annotation(
+        text=summary_text,
+        align='left',
+        showarrow=False,
+        xref='paper',
+        yref='paper',
+        x=0,
+        y=annotation_y,
+        bordercolor='black',
+        borderwidth=1,
+        bgcolor='white',
+        opacity=0.8,
+        font=dict(color='black', size=20)  # 텍스트 색상을 검은색으로 지정, 폰트 크기 조정
+    )
+
+    # Streamlit을 통해 플롯 보여주기
     st.plotly_chart(fig, use_container_width=True)
