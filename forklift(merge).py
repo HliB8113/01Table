@@ -96,16 +96,16 @@ if uploaded_file is not None and 'df' in locals():
             unit_counts = filtered_df.groupby(['차대 코드'])['시작 날짜'].count()
             min_operating_counts = unit_counts.min()
             max_operating_counts = unit_counts.max()
-            min_operating_unit = unit_counts.idxmin()
-            max_operating_unit = unit_counts.idxmax()
-            avg_operating_counts = round(unit_counts.mean())
+            min_operating_unit = unit_counts.idxmin() if not daily_counts.empty else '데이터 없음'
+            max_operating_unit = unit_counts.idxmax() if not daily_counts.empty else '데이터 없음'
+            avg_operating_counts = round(unit_counts.mean()) if not daily_counts.empty else 0
 
             # 전체 운영 횟수 계산
             total_operating_counts = unit_counts.sum()
             
             # 비율 계산
-            min_operating_counts_ratio = (min_operating_counts / total_operating_counts) * 100
-            max_operating_counts_ratio = (max_operating_counts / total_operating_counts) * 100
+            min_operating_counts_ratio = (min_operating_counts / total_operating_counts) * 100 if total_operating_counts > 0 else 0
+            max_operating_counts_ratio = (max_operating_counts / total_operating_counts) * 100 if total_operating_counts > 0 else 0
             avg_operating_counts_ratio = (avg_operating_counts / total_operating_counts) * 100 if total_operating_counts > 0 else 0
 
             # 운영 시간 계산
@@ -155,7 +155,10 @@ if uploaded_file is not None and 'df' in locals():
                 'avg_time': avg_operating_time_formatted,
                 'avg_time_ratio': avg_operating_time_ratio
             }
-        
+        else:
+
+            pass
+            
         pivot_table = filtered_df.pivot_table(index=index_name, columns='시간대', values=value_name, aggfunc=agg_func).fillna(0)
         return pivot_table, title, index_name, summary
 
