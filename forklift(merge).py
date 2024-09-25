@@ -74,7 +74,6 @@ if uploaded_file is not None and 'df' in locals():
             # 비율 계산
             min_operating_units_ratio = (min_operating_units / total_operating_units) * 100
             max_operating_units_ratio = (max_operating_units / total_operating_units) * 100
-            avg_operating_units_ratio = round((avg_operating_units / total_operating_units) * 100)
             
             summary = {
                 'total_units': total_operating_units,
@@ -106,7 +105,6 @@ if uploaded_file is not None and 'df' in locals():
             # 비율 계산
             min_operating_counts_ratio = (min_operating_counts / total_operating_counts) * 100
             max_operating_counts_ratio = (max_operating_counts / total_operating_counts) * 100
-            avg_operating_counts_ratio = round((avg_operating_counts / total_operating_counts) * 100)
             
             # 운영 시간 계산
             filtered_df['운영 시간(초)'] = filtered_df['운영 시간(초)'].astype(int)
@@ -123,7 +121,6 @@ if uploaded_file is not None and 'df' in locals():
             # 비율 계산
             min_operating_time_ratio = (min_operating_time / total_operating_time) * 100
             max_operating_time_ratio = (max_operating_time / total_operating_time) * 100
-            avg_operating_time_ratio = round((avg_operating_time / total_operating_time) * 100)
             
             def format_time(seconds):
                 hours, seconds = divmod(seconds, 3600)
@@ -182,7 +179,7 @@ if uploaded_file is not None and 'df' in locals():
         yaxis=dict(title=index_name, categoryorder='array', categoryarray=sorted(pivot_table.index)),
         plot_bgcolor='white',
         paper_bgcolor='white',
-        margin=dict(l=50, r=50, t=150, b=50),
+        margin=dict(l 50, r 50, t 150, b 50),
         width=900,  # 고정된 너비
         height=graph_height  # 조정 가능한 높이
     )
@@ -193,28 +190,26 @@ if uploaded_file is not None and 'df' in locals():
 
     # 요약 정보를 가로로 배치하여 표시
     if analysis_type == '운영 대수':
-        if analysis_type == '운영 대수':
-            summary_text = (
-                f"<b>운영 대수</b><br>"
-                f"전체: {summary.get('total_units', 'N/A')}대<br>"
-                f"최소: {summary.get('min_units_day', 'N/A')} {summary.get('min_units', 'N/A')}대 ({summary.get('min_units_ratio', 0):.2f}%)<br>"
-                f"최대: {summary.get('max_units_day', 'N/A')} {summary.get('max_units', 'N/A')}대 ({summary.get('max_units_ratio', 0):.2f}%)<br>"
-                f"평균: {summary.get('avg_units', 'N/A')}대 ({summary.get('avg_units_ratio', 'N/A')}%)<br>"
-            )
-        else:
-            summary_text = (
-                f"<b>운영 횟수</b><br>"
-                f"전체: {summary.get('total_counts', 'N/A')}번<br>"
-                f"최소: {summary.get('min_counts_unit', 'N/A')} {summary.get('min_counts', 'N/A')}번 ({summary.get('min_counts_ratio', 0):.2f}%)<br>"
-                f"최대: {summary.get('max_counts_unit', 'N/A')} {summary.get('max_counts', 'N/A')}번 ({summary.get('max_counts_ratio', 0):.2f}%)<br>"
-                f"평균: {summary.get('avg_counts', 'N/A')}번 ({summary.get('avg_counts_ratio', 'N/A')}%)<br>"
-                f"<br><b>운영 시간</b><br>"
-                f"전체: {summary.get('total_time', 'N/A')}<br>"
-                f"최소: {summary.get('min_time_unit', 'N/A')} {summary.get('min_time', 'N/A')} ({summary.get('min_time_ratio', 0):.2f}%)<br>"
-                f"최대: {summary.get('max_time_unit', 'N/A')} {summary.get('max_time', 'N/A')} ({summary.get('max_time_ratio', 0):.2f}%)<br>"
-                f"평균: {summary.get('avg_time', 'N/A')} ({summary.get('avg_time_ratio', 'N/A')}%)<br>"
-            )
-
+        summary_text = (
+            f"<b>운영 대수</b><br>"
+            f"전체: {summary.get('total_units', 'N/A')}대<br>"
+            f"최소: {summary.get('min_units_day', 'N/A')} {summary.get('min_units', 'N/A')}대 ({summary.get('min_units_ratio', 0):.2f}%)<br>"
+            f"최대: {summary.get('max_units_day', 'N/A')} {summary.get('max_units', 'N/A')}대 ({summary.get('max_units_ratio', 0):.2f}%)<br>"
+            f"평균: {summary.get('avg_units', 'N/A')}대<br>"
+        )
+    else:
+        summary_text = (
+            f"<b>운영 횟수</b><br>"
+            f"전체: {summary.get('total_counts', 'N/A')}번<br>"
+            f"최소: {summary.get('min_counts_unit', 'N/A')} {summary.get('min_counts', 'N/A')}번 ({summary.get('min_counts_ratio', 0):.2f}%)<br>"
+            f"최대: {summary.get('max_counts_unit', 'N/A')} {summary.get('max_counts', 'N/A')}번 ({summary.get('max_counts_ratio', 0):.2f}%)<br>"
+            f"평균: {summary.get('avg_counts', 'N/A')}번<br>"
+            f"<br><b>운영 시간</b><br>"
+            f"전체: {summary.get('total_time', 'N/A')}<br>"
+            f"최소: {summary.get('min_time_unit', 'N/A')} {summary.get('min_time', 'N/A')} ({summary.get('min_time_ratio', 0):.2f}%)<br>"
+            f"최대: {summary.get('max_time_unit', 'N/A')} {summary.get('max_time', 'N/A')} ({summary.get('max_time_ratio', 0):.2f}%)<br>"
+            f"평균: {summary.get('avg_time', 'N/A')}<br>"
+        )
     
     # 요약 정보 위치 조정 (그래프 높이에 따라)
     annotation_y = 1.015 + (150 / graph_height)
