@@ -216,7 +216,7 @@ if uploaded_file is not None and 'df' in locals():
         borderwidth=1,
         bgcolor='white',
         opacity=0.8,
-        font=dict(color='black', size=30)  # 텍스트 색상을 검은색으로 지정, 폰트 크기 조정
+        font=dict(color='black', size=20)  # 텍스트 색상을 검은색으로 지정, 폰트 크기 조정
     )
 
     # Streamlit을 통해 플롯 보여주기
