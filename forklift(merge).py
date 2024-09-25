@@ -144,7 +144,7 @@ if uploaded_file is not None and 'df' in locals():
                 'max_counts_unit': max_operating_unit,
                 'max_counts_ratio': max_operating_counts_ratio,
                 'avg_counts': avg_operating_counts,
-                'avg_counts_ratio':  avg_operating_counts_ratio
+                'avg_counts_ratio':  avg_operating_counts_ratio,
                 'total_time': total_operating_time_formatted,
                 'min_time': min_operating_time_formatted,
                 'min_time_unit': min_time_unit,
