@@ -69,7 +69,7 @@ if uploaded_file is not None and 'df' in locals():
             max_operating_units = daily_counts.max()
             min_operating_day = daily_counts.idxmin()
             max_operating_day = daily_counts.idxmax()
-            avg_operating_units = daily_counts.mean()
+            avg_operating_units = round(daily_counts.mean(), 2)
 
             # 비율 계산
             min_operating_units_ratio = (min_operating_units / total_operating_units) * 100
@@ -97,7 +97,7 @@ if uploaded_file is not None and 'df' in locals():
             max_operating_counts = unit_counts.max()
             min_operating_unit = unit_counts.idxmin()
             max_operating_unit = unit_counts.idxmax()
-            avg_operating_counts = unit_counts.mean()
+            avg_operating_counts = round(unit_counts.mean(), 2)
 
             # 전체 운영 횟수 계산
             total_operating_counts = unit_counts.sum()
@@ -113,7 +113,7 @@ if uploaded_file is not None and 'df' in locals():
             max_operating_time = operating_times.max()
             min_time_unit = operating_times.idxmin()
             max_time_unit = operating_times.idxmax()
-            avg_operating_time = operating_times.mean()
+            avg_operating_time = round(operating_times.mean(), 2)
             
             # 전체 운영 시간 계산
             total_operating_time = operating_times.sum()
