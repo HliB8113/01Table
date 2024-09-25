@@ -58,7 +58,7 @@ if uploaded_file is not None and 'df' in locals():
             index_name = '시작 날짜'
             value_name = '차대 코드'
             agg_func = 'nunique'
-            title = '지게차 일자별 운영 대수'
+            title = '지게차 일별 운영 대수'
             
             # 월 전체 운영 대수 계산
             total_operating_units = filtered_df[value_name].nunique()
@@ -231,7 +231,7 @@ if uploaded_file is not None and 'df' in locals():
         borderwidth=1,
         bgcolor='white',
         opacity=0.8,
-        font=dict(color='black', size=20)  # 텍스트 색상을 검은색으로 지정, 폰트 크기 조정
+        font=dict(color='black', size=18)  # 텍스트 색상을 검은색으로 지정, 폰트 크기 조정
     )
 
     # Streamlit을 통해 플롯 보여주기
