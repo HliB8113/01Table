@@ -74,7 +74,8 @@ if uploaded_file is not None and 'df' in locals():
             # 비율 계산
             min_operating_units_ratio = (min_operating_units / total_operating_units) * 100
             max_operating_units_ratio = (max_operating_units / total_operating_units) * 100
-            
+            avg_operating_units_ratio = (avg_operating_units / total_operating_units) * 100 if total_operating_units > 0 else 0
+
             summary = {
                 'total_units': total_operating_units,
                 'min_units': min_operating_units,
@@ -105,7 +106,8 @@ if uploaded_file is not None and 'df' in locals():
             # 비율 계산
             min_operating_counts_ratio = (min_operating_counts / total_operating_counts) * 100
             max_operating_counts_ratio = (max_operating_counts / total_operating_counts) * 100
-            
+            avg_operating_counts_ratio = (avg_operating_counts / total_operating_counts) * 100 if total_operating_counts > 0 else 0
+
             # 운영 시간 계산
             filtered_df['운영 시간(초)'] = filtered_df['운영 시간(초)'].astype(int)
             operating_times = filtered_df.groupby('차대 코드')['운영 시간(초)'].sum()
@@ -121,6 +123,7 @@ if uploaded_file is not None and 'df' in locals():
             # 비율 계산
             min_operating_time_ratio = (min_operating_time / total_operating_time) * 100
             max_operating_time_ratio = (max_operating_time / total_operating_time) * 100
+            avg_operating_time_ratio = (avg_operating_time / total_operating_time) * 100 if total_operating_time > 0 else 0
             
             def format_time(seconds):
                 hours, seconds = divmod(seconds, 3600)
