@@ -113,7 +113,7 @@ if uploaded_file is not None and 'df' in locals():
             max_operating_time = operating_times.max()
             min_time_unit = operating_times.idxmin()
             max_time_unit = operating_times.idxmax()
-            avg_operating_time = round(operating_times.mean(), 2)
+            avg_operating_time = round(operating_times.mean(), 0)
             
             # 전체 운영 시간 계산
             total_operating_time = operating_times.sum()
