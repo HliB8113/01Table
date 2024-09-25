@@ -182,37 +182,24 @@ if uploaded_file is not None and 'df' in locals():
         fig.update_yaxes(type='category', tickmode='array', tickvals=sorted(pivot_table.index))
 
     # 요약 정보를 가로로 배치하여 표시
-    # '운영 대수' 분석 시
     if analysis_type == '운영 대수':
-        average_operating_units = daily_counts.mean()
-        summary['average_units'] = average_operating_units
         summary_text = (
             f"<b>운영 대수</b><br>"
             f"전체: {summary.get('total_units', 'N/A')}대<br>"
-            f"평균: {summary.get('average_units', 'N/A'):.2f}대<br>"
             f"최소: {summary.get('min_units_day', 'N/A')} {summary.get('min_units', 'N/A')}대 ({summary.get('min_units_ratio', 0):.2f}%)<br>"
             f"최대: {summary.get('max_units_day', 'N/A')} {summary.get('max_units', 'N/A')}대 ({summary.get('max_units_ratio', 0):.2f}%)<br>"
         )
-    
-    # '운영 횟수' 분석 시
     else:
-        average_operating_counts = unit_counts.mean()
-        average_operating_time = operating_times.mean()
-        summary['average_counts'] = average_operating_counts
-        summary['average_time'] = format_time(average_operating_time)
         summary_text = (
             f"<b>운영 횟수</b><br>"
             f"전체: {summary.get('total_counts', 'N/A')}번<br>"
-            f"평균: {summary.get('average_counts', 'N/A'):.2f}번<br>"
             f"최소: {summary.get('min_counts_unit', 'N/A')} {summary.get('min_counts', 'N/A')}번 ({summary.get('min_counts_ratio', 0):.2f}%)<br>"
             f"최대: {summary.get('max_counts_unit', 'N/A')} {summary.get('max_counts', 'N/A')}번 ({summary.get('max_counts_ratio', 0):.2f}%)<br>"
             f"<br><b>운영 시간</b><br>"
             f"전체: {summary.get('total_time', 'N/A')}<br>"
-            f"평균: {summary.get('average_time', 'N/A')}<br>"
             f"최소: {summary.get('min_time_unit', 'N/A')} {summary.get('min_time', 'N/A')} ({summary.get('min_time_ratio', 0):.2f}%)<br>"
             f"최대: {summary.get('max_time_unit', 'N/A')} {summary.get('max_time', 'N/A')} ({summary.get('max_time_ratio', 0):.2f}%)"
         )
-
     
     # 요약 정보 위치 조정 (그래프 높이에 따라)
     annotation_y = 1.015 + (150 / graph_height)
