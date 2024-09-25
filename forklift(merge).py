@@ -58,7 +58,7 @@ if uploaded_file is not None and 'df' in locals():
             index_name = '시작 날짜'
             value_name = '차대 코드'
             agg_func = 'nunique'
-            title = '지게차 일별 운영 대수'
+            title = '지게차 일자별 운영 대수'
             
             # 월 전체 운영 대수 계산
             total_operating_units = filtered_df[value_name].nunique()
@@ -96,16 +96,16 @@ if uploaded_file is not None and 'df' in locals():
             unit_counts = filtered_df.groupby(['차대 코드'])['시작 날짜'].count()
             min_operating_counts = unit_counts.min()
             max_operating_counts = unit_counts.max()
-            min_operating_unit = unit_counts.idxmin() if not daily_counts.empty else '데이터 없음'
-            max_operating_unit = unit_counts.idxmax() if not daily_counts.empty else '데이터 없음'
-            avg_operating_counts = round(unit_counts.mean()) if not daily_counts.empty else 0
+            min_operating_unit = unit_counts.idxmin()
+            max_operating_unit = unit_counts.idxmax()
+            avg_operating_counts = round(unit_counts.mean())
 
             # 전체 운영 횟수 계산
             total_operating_counts = unit_counts.sum()
             
             # 비율 계산
-            min_operating_counts_ratio = (min_operating_counts / total_operating_counts) * 100 if total_operating_counts > 0 else 0
-            max_operating_counts_ratio = (max_operating_counts / total_operating_counts) * 100 if total_operating_counts > 0 else 0
+            min_operating_counts_ratio = (min_operating_counts / total_operating_counts) * 100
+            max_operating_counts_ratio = (max_operating_counts / total_operating_counts) * 100
             avg_operating_counts_ratio = (avg_operating_counts / total_operating_counts) * 100 if total_operating_counts > 0 else 0
 
             # 운영 시간 계산
@@ -144,7 +144,6 @@ if uploaded_file is not None and 'df' in locals():
                 'max_counts_unit': max_operating_unit,
                 'max_counts_ratio': max_operating_counts_ratio,
                 'avg_counts': avg_operating_counts,
-                'avg_counts_ratio':  avg_operating_counts_ratio,
                 'total_time': total_operating_time_formatted,
                 'min_time': min_operating_time_formatted,
                 'min_time_unit': min_time_unit,
@@ -153,12 +152,8 @@ if uploaded_file is not None and 'df' in locals():
                 'max_time_unit': max_time_unit,
                 'max_time_ratio': max_operating_time_ratio,
                 'avg_time': avg_operating_time_formatted,
-                'avg_time_ratio': avg_operating_time_ratio
             }
-        else:
-
-            pass
-            
+        
         pivot_table = filtered_df.pivot_table(index=index_name, columns='시간대', values=value_name, aggfunc=agg_func).fillna(0)
         return pivot_table, title, index_name, summary
 
@@ -234,7 +229,7 @@ if uploaded_file is not None and 'df' in locals():
         borderwidth=1,
         bgcolor='white',
         opacity=0.8,
-        font=dict(color='black', size=18)  # 텍스트 색상을 검은색으로 지정, 폰트 크기 조정
+        font=dict(color='black', size=20)  # 텍스트 색상을 검은색으로 지정, 폰트 크기 조정
     )
 
     # Streamlit을 통해 플롯 보여주기
