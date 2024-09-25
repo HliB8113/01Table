@@ -67,9 +67,9 @@ if uploaded_file is not None and 'df' in locals():
             daily_counts = filtered_df.groupby('시작 날짜')[value_name].nunique()
             min_operating_units = daily_counts.min()
             max_operating_units = daily_counts.max()
-            min_operating_day = daily_counts.idxmin()
-            max_operating_day = daily_counts.idxmax()
-            avg_operating_units = round(daily_counts.mean())
+            min_operating_day = daily_counts.idxmin() if not daily_counts.empty else '데이터 없음'
+            max_operating_day = daily_counts.idxmax() if not daily_counts.empty else '데이터 없음'
+            avg_operating_units = round(daily_counts.mean(), 2) if not daily_counts.empty else 0
 
             # 비율 계산
             min_operating_units_ratio = (min_operating_units / total_operating_units) * 100
@@ -85,7 +85,7 @@ if uploaded_file is not None and 'df' in locals():
                 'max_units_day': max_operating_day,
                 'max_units_ratio': max_operating_units_ratio,
                 'avg_units': avg_operating_units,
-                'avg_units_ratio' : avg_operating_units_ratio
+                'avg_units_ratio': avg_operating_units_ratio
             }
         else:
             index_name = '차대 코드'
@@ -97,9 +97,9 @@ if uploaded_file is not None and 'df' in locals():
             unit_counts = filtered_df.groupby(['차대 코드'])['시작 날짜'].count()
             min_operating_counts = unit_counts.min()
             max_operating_counts = unit_counts.max()
-            min_operating_unit = unit_counts.idxmin()
-            max_operating_unit = unit_counts.idxmax()
-            avg_operating_counts = round(unit_counts.mean())
+            min_operating_unit = unit_counts.idxmin() if not unit_counts.empty else '데이터 없음'
+            max_operating_unit = unit_counts.idxmax() if not unit_counts.empty else '데이터 없음'
+            avg_operating_counts = round(unit_counts.mean(), 2) if not unit_counts.empty else 0
 
             # 전체 운영 횟수 계산
             total_operating_counts = unit_counts.sum()
@@ -114,9 +114,9 @@ if uploaded_file is not None and 'df' in locals():
             operating_times = filtered_df.groupby('차대 코드')['운영 시간(초)'].sum()
             min_operating_time = operating_times.min()
             max_operating_time = operating_times.max()
-            min_time_unit = operating_times.idxmin()
-            max_time_unit = operating_times.idxmax()
-            avg_operating_time = round(operating_times.mean())
+            min_time_unit = operating_times.idxmin() if not operating_times.empty else '데이터 없음'
+            max_time_unit = operating_times.idxmax() if not operating_times.empty else '데이터 없음'
+            avg_operating_time = round(operating_times.mean(), 2) if not operating_times.empty else 0
             
             # 전체 운영 시간 계산
             total_operating_time = operating_times.sum()
@@ -195,13 +195,13 @@ if uploaded_file is not None and 'df' in locals():
         fig.update_yaxes(type='category', tickmode='array', tickvals=sorted(pivot_table.index))
 
     # 요약 정보를 가로로 배치하여 표시
-        if analysis_type == '운영 대수':
-         summary_text = (
+    if analysis_type == '운영 대수':
+        summary_text = (
             f"<b>운영 대수</b><br>"
             f"전체: {summary.get('total_units', 'N/A')}대<br>"
             f"최소: {summary.get('min_units_day', 'N/A')} {summary.get('min_units', 'N/A')}대 ({float(summary.get('min_units_ratio', 0)):0.2f}%)<br>"
             f"최대: {summary.get('max_units_day', 'N/A')} {summary.get('max_units', 'N/A')}대 ({float(summary.get('max_units_ratio', 0)):0.2f}%)<br>"
-            f"평균: {summary.get('avg_units', 0)):0.2f}대 ({float(summary.get('avg_units_ratio', 0)):0.2f}%)<br>"
+            f"평균: {float(summary.get('avg_units', 0)):0.2f}대 ({float(summary.get('avg_units_ratio', 0)):0.2f}%)<br>"
         )
     else:
         summary_text = (
@@ -209,13 +209,14 @@ if uploaded_file is not None and 'df' in locals():
             f"전체: {summary.get('total_counts', 'N/A')}번<br>"
             f"최소: {summary.get('min_counts_unit', 'N/A')} {summary.get('min_counts', 'N/A')}번 ({float(summary.get('min_counts_ratio', 0)):0.2f}%)<br>"
             f"최대: {summary.get('max_counts_unit', 'N/A')} {summary.get('max_counts', 'N/A')}번 ({float(summary.get('max_counts_ratio', 0)):0.2f}%)<br>"
-            f"평균: {summary.get('avg_counts', 0)):0.2f}번 ({float(summary.get('avg_counts_ratio', 0)):0.2f}%)<br>"
+            f"평균: {float(summary.get('avg_counts', 0)):0.2f}번 ({float(summary.get('avg_counts_ratio', 0)):0.2f}%)<br>"
             f"<b>운영 시간</b><br>"
             f"전체: {summary.get('total_time', 'N/A')}<br>"
             f"최소: {summary.get('min_time_unit', 'N/A')} {summary.get('min_time', 'N/A')} ({float(summary.get('min_time_ratio', 0)):0.2f}%)<br>"
             f"최대: {summary.get('max_time_unit', 'N/A')} {summary.get('max_time', 'N/A')} ({float(summary.get('max_time_ratio', 0)):0.2f}%)<br>"
             f"평균: {summary.get('avg_time', 'N/A')} ({float(summary.get('avg_time_ratio', 0)):0.2f}%)<br>"
         )
+    
     # 요약 정보 위치 조정 (그래프 높이에 따라)
     annotation_y = 1.015 + (150 / graph_height)
 
