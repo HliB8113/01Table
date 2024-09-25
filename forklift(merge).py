@@ -214,7 +214,7 @@ if uploaded_file is not None and 'df' in locals():
             f"전체: {summary.get('total_time', 'N/A')}<br>"
             f"최소: {summary.get('min_time_unit', 'N/A')} {summary.get('min_time', 'N/A')} ({float(summary.get('min_time_ratio', 0)):0.2f}%)<br>"
             f"최대: {summary.get('max_time_unit', 'N/A')} {summary.get('max_time', 'N/A')} ({float(summary.get('max_time_ratio', 0)):0.2f}%)<br>"
-            f"평균: {summary.get('avg_time', 'N/A')} ({float(summary.get('avg_time_ratio', 0)):0.2f}%)<br>"
+            f"평균: {summary.get('avg_time', 'N/A')} ({int(summary.get('avg_time_ratio', 0)):0.2f}%)<br>"
         )
     
     # 요약 정보 위치 조정 (그래프 높이에 따라)
