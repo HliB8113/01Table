@@ -235,14 +235,16 @@ if uploaded_file is not None and 'df' in locals():
         font=dict(color='black', size=20)  # 텍스트 색상을 검은색으로 지정, 폰트 크기 조정
     )
 
-    # 그래프에서 최댓값 포커싱
+    # 그래프에서 최댓값 포커싱 (세련된 방식으로 변경)
     max_val_coords = list(zip(*((i, j) for i, row in enumerate(pivot_table.values) for j, val in enumerate(row) if val == pivot_table.values.max())))
     if max_val_coords:
         fig.add_trace(go.Scatter(
             x=[pivot_table.columns[j] for j in max_val_coords[1]],
             y=[pivot_table.index[i] for i in max_val_coords[0]],
-            mode='markers',
-            marker=dict(size=15, color='red', symbol='star'),
+            mode='markers+text',
+            marker=dict(size=18, color='rgba(255, 69, 0, 0.8)', symbol='star', line=dict(width=2, color='black')),
+            text=['최댓값'] * len(max_val_coords[0]),
+            textposition='top center',
             name='최댓값'
         ))
 
