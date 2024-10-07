@@ -164,7 +164,7 @@ if uploaded_file is not None and 'df' in locals():
 
     # Heatmap 생성
     fig = make_subplots(rows=1, cols=1)
-    tooltip_texts = [[f'{analysis_type} {int(val)}{"\uB300" if analysis_type == "\uC6B4\uC601 \uB300\uC218" else "\uBC88"}' for val in row] for row in pivot_table.values]
+    tooltip_texts = [[f"{analysis_type} {int(val)}{'대' if analysis_type == '운영 대수' else '번'}" for val in row] for row in pivot_table.values]
     heatmap = go.Heatmap(
         z=pivot_table.values,
         x=pivot_table.columns,
