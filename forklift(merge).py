@@ -25,7 +25,7 @@ with st.sidebar:
         # 12월 데이터 제외
         df = df[df['월'] != 12]
 
-        # 들록다운 메뉴 설정
+        # 드롭다운 메뉴 설정
         analysis_type = st.radio("분석 유형 선택:", ('운영 대수', '운영 횟수'))
         selected_month = st.selectbox('월 선택:', ['전체'] + sorted(df['월'].dropna().unique().tolist()))
         selected_department = st.selectbox('부서 선택:', ['전체'] + sorted(df['부서'].dropna().unique().tolist()))
@@ -58,7 +58,7 @@ if uploaded_file is not None and 'df' in locals():
             index_name = '시작 날짜'
             value_name = '차대 코드'
             agg_func = 'nunique'
-            title = '지거차 일자별 운영 대수'
+            title = '지게차 일자별 운영 대수'
             
             # 월 전체 운영 대수 계산
             total_operating_units = filtered_df[value_name].nunique()
@@ -91,7 +91,7 @@ if uploaded_file is not None and 'df' in locals():
             index_name = '차대 코드'
             value_name = '시작 날짜'
             agg_func = 'count'
-            title = '지거차 시간대별 운영 횟수'
+            title = '지게차 시간대별 운영 횟수'
             
             # 월 최소 및 최대 운영 횟수 계산
             unit_counts = filtered_df.groupby(['차대 코드'])['시작 날짜'].count()
@@ -176,31 +176,75 @@ if uploaded_file is not None and 'df' in locals():
         zmax=pivot_table.values.max()
     )
     fig.add_trace(heatmap)
-
-    # 최대값 위치 확인
-    max_value = pivot_table.values.max()
-    max_indices = list(zip(*((pivot_table.values == max_value).nonzero())))
-    
-    # 최대값이 포탈되도록 최대값을 포함하는 열을 중심으로 추가
-    if max_indices:
-        row_idx, col_idx = max_indices[0]
-        max_x = pivot_table.columns[col_idx]
-        max_y = pivot_table.index[row_idx]
-        
-        # x축 및 y축을 최대값 위치에 맞게 편집
-        fig.update_xaxes(range=[max_x, max_x], title='\uc2dc\uac04\ub300', fixedrange=True)
-        fig.update_yaxes(range=[max_y, max_y], title=index_name, fixedrange=True)
-
     fig.update_layout(
         title={
             'text': title,
             'x': 0.5
         },
+        xaxis=dict(title='시간대', fixedrange=True),
+        yaxis=dict(title=index_name, categoryorder='array', categoryarray=sorted(pivot_table.index)),
         plot_bgcolor='white',
         paper_bgcolor='white',
         margin=dict(l=50, r=50, t=150, b=50),
-        width=900,  # 고정된 널비
+        width=900,  # 고정된 너비
         height=graph_height  # 조정 가능한 높이
     )
     
-    # 오전 가능 buttons
+    # 모든 '시작 날짜'를 세로축에 표시 (월일만 표시)
+    if analysis_type == '운영 대수':
+        fig.update_yaxes(type='category', tickmode='array', tickvals=sorted(pivot_table.index))
+
+    # 요약 정보를 가로로 배치하여 표시
+    if analysis_type == '운영 대수':
+        summary_text = (
+            f"<b>운영 대수</b><br>"
+            f"전체: {summary.get('total_units', 'N/A')}대<br>"
+            f"최소: {summary.get('min_units_day', 'N/A')} {summary.get('min_units', 'N/A')}대 ({float(summary.get('min_units_ratio', 0)):0.2f}%)<br>"
+            f"최대: {summary.get('max_units_day', 'N/A')} {summary.get('max_units', 'N/A')}대 ({float(summary.get('max_units_ratio', 0)):0.2f}%)<br>"
+            f"평균: {summary.get('avg_units', 'N/A')}대 ({float(summary.get('avg_units_ratio', 0)):0.2f}%)<br>"
+        )
+    else:
+        summary_text = (
+            f"<b>운영 횟수</b><br>"
+            f"전체: {summary.get('total_counts', 'N/A')}번<br>"
+            f"최소: {summary.get('min_counts_unit', 'N/A')} {summary.get('min_counts', 'N/A')}번 ({float(summary.get('min_counts_ratio', 0)):0.2f}%)<br>"
+            f"최대: {summary.get('max_counts_unit', 'N/A')} {summary.get('max_counts', 'N/A')}번 ({float(summary.get('max_counts_ratio', 0)):0.2f}%)<br>"
+            f"평균: {summary.get('avg_counts', 'N/A')}번 ({float(summary.get('avg_counts_ratio', 0)):0.2f}%)<br>"
+            f"<b>운영 시간</b><br>"
+            f"전체: {summary.get('total_time', 'N/A')}<br>"
+            f"최소: {summary.get('min_time_unit', 'N/A')} {summary.get('min_time', 'N/A')} ({float(summary.get('min_time_ratio', 0)):0.2f}%)<br>"
+            f"최대: {summary.get('max_time_unit', 'N/A')} {summary.get('max_time', 'N/A')} ({float(summary.get('max_time_ratio', 0)):0.2f}%)<br>"
+            f"평균: {summary.get('avg_time', 'N/A')} ({float(summary.get('avg_time_ratio', 0)):0.2f}%)<br>"
+        )
+    
+    # 요약 정보 위치 조정 (그래프 높이에 따라)
+    annotation_y = 1.015 + (150 / graph_height)
+
+    fig.add_annotation(
+        text=summary_text,
+        align='left',
+        showarrow=False,
+        xref='paper',
+        yref='paper',
+        x=0,
+        y=annotation_y,
+        bordercolor='black',
+        borderwidth=1,
+        bgcolor='white',
+        opacity=0.8,
+        font=dict(color='black', size=20)  # 텍스트 색상을 검은색으로 지정, 폰트 크기 조정
+    )
+
+    # 그래프에서 최댓값 포커싱
+    max_val_coords = list(zip(*((i, j) for i, row in enumerate(pivot_table.values) for j, val in enumerate(row) if val == pivot_table.values.max())))
+    if max_val_coords:
+        fig.add_trace(go.Scatter(
+            x=[pivot_table.columns[j] for j in max_val_coords[1]],
+            y=[pivot_table.index[i] for i in max_val_coords[0]],
+            mode='markers',
+            marker=dict(size=15, color='red', symbol='star'),
+            name='최댓값'
+        ))
+
+    # Streamlit을 통해 플롯 보여주기
+    st.plotly_chart(fig, use_container_width=True)
