@@ -32,7 +32,7 @@ with st.sidebar:
         selected_process = st.selectbox('공정 선택:', ['전체'] + sorted(df['공정'].dropna().unique().tolist()))
         selected_forklift_class = st.selectbox('차대 분류 선택:', ['전체'] + sorted(df['차대 분류'].dropna().unique().tolist()))
         selected_workplace = st.selectbox('작업 장소 선택:', ['전체'] + sorted(df['작업 장소'].dropna().unique().tolist()))
-        graph_height = st.slider('그래프 높이 선택', 300, 1500, 900)
+        graph_height = st.slider('그레프 높이 선택', 300, 1500, 900)
 
 # 변수 초기화
 title = "분석 대기 중..."
@@ -58,7 +58,7 @@ if uploaded_file is not None and 'df' in locals():
             index_name = '시작 날짜'
             value_name = '차대 코드'
             agg_func = 'nunique'
-            title = '지게차 일자별 운영 대수'
+            title = '지가차 일자별 운영 대수'
             
             # 월 전체 운영 대수 계산
             total_operating_units = filtered_df[value_name].nunique()
@@ -91,7 +91,7 @@ if uploaded_file is not None and 'df' in locals():
             index_name = '차대 코드'
             value_name = '시작 날짜'
             agg_func = 'count'
-            title = '지게차 시간대별 운영 횟수'
+            title = '지가차 시간대별 운영 횟수'
             
             # 월 최소 및 최대 운영 횟수 계산
             unit_counts = filtered_df.groupby(['차대 코드'])['시작 날짜'].count()
@@ -164,7 +164,7 @@ if uploaded_file is not None and 'df' in locals():
 
     # Heatmap 생성
     fig = make_subplots(rows=1, cols=1)
-    tooltip_texts = [[f'{analysis_type} {int(val)}{"대" if analysis_type == "운영 대수" else "번"}' for val in row] for row in pivot_table.values]
+    tooltip_texts = [[f'{analysis_type} {int(val)}{"\uB300" if analysis_type == "\uC6B4\uC601 \uB300\uC218" else "\uBC88"}' for val in row] for row in pivot_table.values]
     heatmap = go.Heatmap(
         z=pivot_table.values,
         x=pivot_table.columns,
@@ -176,22 +176,6 @@ if uploaded_file is not None and 'df' in locals():
         zmax=pivot_table.values.max()
     )
     fig.add_trace(heatmap)
-    
-    # 최댓값 하이라이트
-    max_val_idx = zip(*pivot_table.values.nonzero())
-    max_val = pivot_table.values.max()
-    highlight_points = [(y, x) for y, x in max_val_idx if pivot_table.values[y, x] == max_val]
-    for point in highlight_points:
-        fig.add_trace(go.Scatter(
-            x=[pivot_table.columns[point[1]]],
-            y=[pivot_table.index[point[0]]],
-            mode='markers+text',
-            marker=dict(color='red', size=14, symbol='star'),
-            text=['최대값'],
-            textposition='top center',
-            showlegend=False
-        ))
-    
     fig.update_layout(
         title={
             'text': title,
@@ -202,9 +186,23 @@ if uploaded_file is not None and 'df' in locals():
         plot_bgcolor='white',
         paper_bgcolor='white',
         margin=dict(l=50, r=50, t=150, b=50),
-        width=900,  # 고정된 너비
+        width=900,  # 고정된 넠더비
         height=graph_height  # 조정 가능한 높이
     )
+    
+    # 최대치 표시 및 하이라이트 기능 추가
+    max_value = pivot_table.values.max()
+    max_indices = zip(*divmod(pivot_table.values.argmax(), pivot_table.shape[1]))
+    for row_idx, col_idx in max_indices:
+        fig.add_trace(go.Scatter(
+            x=[pivot_table.columns[col_idx]],
+            y=[pivot_table.index[row_idx]],
+            mode='markers+text',
+            marker=dict(size=15, color='red', symbol='circle'),
+            text=[f'최댓값: {int(max_value)}'],
+            textposition='top center',
+            showlegend=False
+        ))
     
     # 모든 '시작 날짜'를 세로축에 표시 (월일만 표시)
     if analysis_type == '운영 대수':
@@ -233,7 +231,7 @@ if uploaded_file is not None and 'df' in locals():
             f"평균: {summary.get('avg_time', 'N/A')} ({float(summary.get('avg_time_ratio', 0)):0.2f}%)<br>"
         )
     
-    # 요약 정보 위치 조정 (그래프 높이에 따라)
+    # 요약 정보 위치 조정 (그레프 높이에 따라)
     annotation_y = 1.015 + (150 / graph_height)
 
     fig.add_annotation(
@@ -248,8 +246,8 @@ if uploaded_file is not None and 'df' in locals():
         borderwidth=1,
         bgcolor='white',
         opacity=0.8,
-        font=dict(color='black', size=20)  # 텍스트 색상을 검은색으로 지정, 폰트 크기 조정
+        font=dict(color='black', size=20)  # 텍스트 색을 검은색으로 지정, 폰트 크기 조정
     )
 
-    # Streamlit을 통해 플롯 보여주기
+    # Streamlit을 통해 플롤 보여주기
     st.plotly_chart(fig, use_container_width=True)
