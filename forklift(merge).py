@@ -241,8 +241,8 @@ if uploaded_file is not None and 'df' in locals():
         for i, j in zip(max_val_coords[0], max_val_coords[1]):
             fig.add_shape(
                 type="rect",
-                x0=pivot_table.columns[j] - 0.5,
-                x1=pivot_table.columns[j] + 0.5,
+                x0=j - 0.5,
+                x1=j + 0.5,
                 y0=i - 0.5,
                 y1=i + 0.5,
                 line=dict(color="rgba(255, 69, 0, 0.8)", width=3),
