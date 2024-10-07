@@ -238,15 +238,26 @@ if uploaded_file is not None and 'df' in locals():
     # 그래프에서 최댓값 포커싱 (세련된 방식으로 변경)
     max_val_coords = list(zip(*((i, j) for i, row in enumerate(pivot_table.values) for j, val in enumerate(row) if val == pivot_table.values.max())))
     if max_val_coords:
-        fig.add_trace(go.Scatter(
-            x=[pivot_table.columns[j] for j in max_val_coords[1]],
-            y=[pivot_table.index[i] for i in max_val_coords[0]],
-            mode='markers+text',
-            marker=dict(size=18, color='rgba(255, 69, 0, 0.8)', symbol='star', line=dict(width=2, color='black')),
-            text=['최댓값'] * len(max_val_coords[0]),
-            textposition='top center',
-            name='최댓값'
-        ))
+        for i, j in zip(max_val_coords[0], max_val_coords[1]):
+            fig.add_shape(
+                type="rect",
+                x0=pivot_table.columns[j] - 0.5,
+                x1=pivot_table.columns[j] + 0.5,
+                y0=i - 0.5,
+                y1=i + 0.5,
+                line=dict(color="rgba(255, 69, 0, 0.8)", width=3),
+                fillcolor="rgba(255, 69, 0, 0.2)",
+                layer="below"
+            )
+            fig.add_trace(go.Scatter(
+                x=[pivot_table.columns[j]],
+                y=[pivot_table.index[i]],
+                mode='text',
+                text=['최댓값'],
+                textposition='middle center',
+                textfont=dict(size=16, color="black", family="Arial"),
+                name='최댓값'
+            ))
 
     # Streamlit을 통해 플롯 보여주기
     st.plotly_chart(fig, use_container_width=True)
