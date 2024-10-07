@@ -65,27 +65,13 @@ if uploaded_file is not None and 'df' in locals():
             
             # 월 최소 및 최대 운영 대수 계산
             daily_counts = filtered_df.groupby('시작 날짜')[value_name].nunique()
-            min_operating_units = daily_counts.min()
             max_operating_units = daily_counts.max()
-            min_operating_day = daily_counts.idxmin() if not daily_counts.empty else '데이터 없음'
             max_operating_day = daily_counts.idxmax() if not daily_counts.empty else '데이터 없음'
-            avg_operating_units = round(daily_counts.mean()) if not daily_counts.empty else 0
-
-            # 비율 계산
-            min_operating_units_ratio = (min_operating_units / total_operating_units) * 100
-            max_operating_units_ratio = (max_operating_units / total_operating_units) * 100
-            avg_operating_units_ratio = (avg_operating_units / total_operating_units) * 100 if total_operating_units > 0 else 0
 
             summary = {
                 'total_units': total_operating_units,
-                'min_units': min_operating_units,
-                'min_units_day': min_operating_day,
-                'min_units_ratio': min_operating_units_ratio,
                 'max_units': max_operating_units,
                 'max_units_day': max_operating_day,
-                'max_units_ratio': max_operating_units_ratio,
-                'avg_units': avg_operating_units,
-                'avg_units_ratio': avg_operating_units_ratio
             }
         else:
             index_name = '차대 코드'
@@ -95,66 +81,12 @@ if uploaded_file is not None and 'df' in locals():
             
             # 월 최소 및 최대 운영 횟수 계산
             unit_counts = filtered_df.groupby(['차대 코드'])['시작 날짜'].count()
-            min_operating_counts = unit_counts.min()
             max_operating_counts = unit_counts.max()
-            min_operating_unit = unit_counts.idxmin() if not unit_counts.empty else '데이터 없음'
             max_operating_unit = unit_counts.idxmax() if not unit_counts.empty else '데이터 없음'
-            avg_operating_counts = round(unit_counts.mean()) if not unit_counts.empty else 0
 
-            # 전체 운영 횟수 계산
-            total_operating_counts = unit_counts.sum()
-            
-            # 비율 계산
-            min_operating_counts_ratio = (min_operating_counts / total_operating_counts) * 100
-            max_operating_counts_ratio = (max_operating_counts / total_operating_counts) * 100
-            avg_operating_counts_ratio = (avg_operating_counts / total_operating_counts) * 100 if total_operating_counts > 0 else 0
-
-            # 운영 시간 계산
-            filtered_df['운영 시간(초)'] = filtered_df['운영 시간(초)'].astype(int)
-            operating_times = filtered_df.groupby('차대 코드')['운영 시간(초)'].sum()
-            min_operating_time = operating_times.min()
-            max_operating_time = operating_times.max()
-            min_time_unit = operating_times.idxmin() if not operating_times.empty else '데이터 없음'
-            max_time_unit = operating_times.idxmax() if not operating_times.empty else '데이터 없음'
-            avg_operating_time = round(operating_times.mean()) if not operating_times.empty else 0
-            
-            # 전체 운영 시간 계산
-            total_operating_time = operating_times.sum()
-
-            # 비율 계산
-            min_operating_time_ratio = (min_operating_time / total_operating_time) * 100
-            max_operating_time_ratio = (max_operating_time / total_operating_time) * 100
-            avg_operating_time_ratio = (avg_operating_time / total_operating_time) * 100 if total_operating_time > 0 else 0
-            
-            def format_time(seconds):
-                hours, seconds = divmod(seconds, 3600)
-                minutes, seconds = divmod(seconds, 60)
-                return f"{hours:02}:{minutes:02}:{seconds:02}"
-
-            min_operating_time_formatted = format_time(min_operating_time)
-            max_operating_time_formatted = format_time(max_operating_time)
-            avg_operating_time_formatted = format_time(avg_operating_time)
-            total_operating_time_formatted = format_time(total_operating_time)
-            
             summary = {
-                'total_counts': total_operating_counts,
-                'min_counts': min_operating_counts,
-                'min_counts_unit': min_operating_unit,
-                'min_counts_ratio': min_operating_counts_ratio,
                 'max_counts': max_operating_counts,
                 'max_counts_unit': max_operating_unit,
-                'max_counts_ratio': max_operating_counts_ratio,
-                'avg_counts': avg_operating_counts,
-                'avg_counts_ratio': avg_operating_counts_ratio,
-                'total_time': total_operating_time_formatted,
-                'min_time': min_operating_time_formatted,
-                'min_time_unit': min_time_unit,
-                'min_time_ratio': min_operating_time_ratio,
-                'max_time': max_operating_time_formatted,
-                'max_time_unit': max_time_unit,
-                'max_time_ratio': max_operating_time_ratio,
-                'avg_time': avg_operating_time_formatted,
-                'avg_time_ratio': avg_operating_time_ratio
             }
         
         pivot_table = filtered_df.pivot_table(index=index_name, columns='시간대', values=value_name, aggfunc=agg_func).fillna(0)
@@ -176,6 +108,23 @@ if uploaded_file is not None and 'df' in locals():
         zmax=pivot_table.values.max()
     )
     fig.add_trace(heatmap)
+
+    # 최댓값 위치 확인
+    max_value = pivot_table.values.max()
+    max_indices = list(zip(*((pivot_table.values == max_value).nonzero())))
+    
+    # 최댓값 강조 포인트 추가
+    for row_idx, col_idx in max_indices:
+        fig.add_trace(go.Scatter(
+            x=[pivot_table.columns[col_idx]],
+            y=[pivot_table.index[row_idx]],
+            mode='markers+text',
+            marker=dict(size=15, color='red', symbol='x'),
+            text=[f"최댓값: {int(max_value)}"],
+            textposition="top center",
+            showlegend=False
+        ))
+
     fig.update_layout(
         title={
             'text': title,
@@ -193,47 +142,6 @@ if uploaded_file is not None and 'df' in locals():
     # 모든 '시작 날짜'를 세로축에 표시 (월일만 표시)
     if analysis_type == '운영 대수':
         fig.update_yaxes(type='category', tickmode='array', tickvals=sorted(pivot_table.index))
-
-    # 요약 정보를 가로로 배치하여 표시
-    if analysis_type == '운영 대수':
-        summary_text = (
-            f"<b>운영 대수</b><br>"
-            f"전체: {summary.get('total_units', 'N/A')}대<br>"
-            f"최소: {summary.get('min_units_day', 'N/A')} {summary.get('min_units', 'N/A')}대 ({float(summary.get('min_units_ratio', 0)):0.2f}%)<br>"
-            f"최대: {summary.get('max_units_day', 'N/A')} {summary.get('max_units', 'N/A')}대 ({float(summary.get('max_units_ratio', 0)):0.2f}%)<br>"
-            f"평균: {summary.get('avg_units', 'N/A')}대 ({float(summary.get('avg_units_ratio', 0)):0.2f}%)<br>"
-        )
-    else:
-        summary_text = (
-            f"<b>운영 횟수</b><br>"
-            f"전체: {summary.get('total_counts', 'N/A')}번<br>"
-            f"최소: {summary.get('min_counts_unit', 'N/A')} {summary.get('min_counts', 'N/A')}번 ({float(summary.get('min_counts_ratio', 0)):0.2f}%)<br>"
-            f"최대: {summary.get('max_counts_unit', 'N/A')} {summary.get('max_counts', 'N/A')}번 ({float(summary.get('max_counts_ratio', 0)):0.2f}%)<br>"
-            f"평균: {summary.get('avg_counts', 'N/A')}번 ({float(summary.get('avg_counts_ratio', 0)):0.2f}%)<br>"
-            f"<b>운영 시간</b><br>"
-            f"전체: {summary.get('total_time', 'N/A')}<br>"
-            f"최소: {summary.get('min_time_unit', 'N/A')} {summary.get('min_time', 'N/A')} ({float(summary.get('min_time_ratio', 0)):0.2f}%)<br>"
-            f"최대: {summary.get('max_time_unit', 'N/A')} {summary.get('max_time', 'N/A')} ({float(summary.get('max_time_ratio', 0)):0.2f}%)<br>"
-            f"평균: {summary.get('avg_time', 'N/A')} ({float(summary.get('avg_time_ratio', 0)):0.2f}%)<br>"
-        )
-    
-    # 요약 정보 위치 조정 (그래프 높이에 따라)
-    annotation_y = 1.015 + (150 / graph_height)
-
-    fig.add_annotation(
-        text=summary_text,
-        align='left',
-        showarrow=False,
-        xref='paper',
-        yref='paper',
-        x=0,
-        y=annotation_y,
-        bordercolor='black',
-        borderwidth=1,
-        bgcolor='white',
-        opacity=0.8,
-        font=dict(color='black', size=20)  # 텍스트 색상을 검은색으로 지정, 폰트 크기 조정
-    )
 
     # Streamlit을 통해 플롯 보여주기
     st.plotly_chart(fig, use_container_width=True)
