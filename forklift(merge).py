@@ -188,6 +188,7 @@ if uploaded_file is not None and 'df' in locals():
                 marker=dict(size=12, color='yellow', symbol='circle'),
                 text=[f'최댓값: {int(max_value)}'],
                 textposition='top center',
+                textfont=dict(color='black'),
                 hoverinfo='skip'
             ))
 
