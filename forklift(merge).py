@@ -200,7 +200,7 @@ if uploaded_file is not None and 'df' in locals():
             'text': title,
             'x': 0.4,
             'font': {
-                'size': 24
+                'size': 28
             }
         },
         xaxis=dict(title='시간대', fixedrange=True),
