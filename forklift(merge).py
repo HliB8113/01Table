@@ -162,7 +162,7 @@ if uploaded_file is not None and 'df' in locals():
 
     # Heatmap 생성
     fig = make_subplots(rows=1, cols=1)
-    tooltip_texts = [[f'{analysis_type} {int(val)}{"대" if analysis_type == "운영 대수" else "번"}' for val in row] for row in pivot_table.values]
+    tooltip_texts = [[f'{int(val)} {"대" if analysis_type == "운영 대수" else "회"}' for val in row] for row in pivot_table.values]
     heatmap = go.Heatmap(
         z=pivot_table.values,
         x=pivot_table.columns,
@@ -186,7 +186,7 @@ if uploaded_file is not None and 'df' in locals():
                 y=[pivot_table.index[y_idx]],
                 mode='markers+text',
                 marker=dict(size=12, color='yellow', symbol='circle'),
-                text=[f'최댓값: {int(max_value)}'],
+                text=[f'{int(max_value)} {"대" if analysis_type == "운영 대수" else "회"}'],
                 textposition='top center',
                 textfont=dict(color='black'),
                 hoverinfo='skip'
@@ -203,7 +203,8 @@ if uploaded_file is not None and 'df' in locals():
         paper_bgcolor='white',
         margin=dict(l=50, r=50, t=150, b=50),
         width=900,  # 고정된 너비
-        height=graph_height  # 조정 가능한 높이
+        height=graph_height,  # 조정 가능한 높이
+        coloraxis_colorbar=dict(title='계급 크기')
     )
     
     # 모든 '시작 날짜'를 세로축에 표시 (월일만 표시)
