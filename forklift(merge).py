@@ -242,9 +242,8 @@ if uploaded_file is not None and 'df' in locals():
         )
     # 요약 정보 위치 조정 (그래프 높이에 따라)
     annotation_y = 1.015 + (150 / graph_height)
+    # Streamlit을 통해 플롯 보여주기
+    st.plotly_chart(fig)
 
     # 요약 정보를 히트맵 아래로 표시
     st.markdown(summary_text, unsafe_allow_html=True)
-    
-    # Streamlit을 통해 플롯 보여주기
-    st.plotly_chart(fig)
