@@ -243,8 +243,6 @@ if uploaded_file is not None and 'df' in locals():
     annotation_y = 1.015 + (150 / graph_height)
 
       # 텍스트 색상을 검은색으로 지정, 폰트 크기 조정
-    )
-
     # Streamlit을 통해 플롯 보여주기
     st.plotly_chart(fig)
 
