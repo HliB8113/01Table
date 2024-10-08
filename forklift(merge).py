@@ -92,7 +92,7 @@ if uploaded_file is not None and 'df' in locals():
                 'avg_units_ratio': avg_operating_units_ratio,
                 'max_by_time': max_by_time,
                 'max_by_time_time': max_by_time_time,
-                'avg_by_time': avg_by_time
+                'avg_by_time': max_by_time_series.mean()
             }
         else:
             index_name = '차대 코드'
@@ -238,7 +238,7 @@ if uploaded_file is not None and 'df' in locals():
             f"최대: {summary.get('max_units_day', 'N/A')} {summary.get('max_units', 'N/A')}대 ({float(summary.get('max_units_ratio', 0)):0.2f}%)<br>"
             f"평균: {summary.get('avg_units', 'N/A')}대 ({float(summary.get('avg_units_ratio', 0)):0.2f}%)<br>"
             f"시간대({summary.get('max_by_time_time', 'N/A')}) 최댓값: {summary.get('max_by_time', 'N/A')}대<br>"
-            f"시간대 평균값: {summary.get('avg_by_time', 'N/A')}대<br>"
+            f"시간대({summary.get('max_by_time_time', 'N/A')}) 최댓값 평균: {summary.get('avg_by_time', 'N/A'):0.0f}대<br>"
         )
     else:
         summary_text = (
@@ -253,7 +253,7 @@ if uploaded_file is not None and 'df' in locals():
             f"최대: {summary.get('max_time_unit', 'N/A')} {summary.get('max_time', 'N/A')} ({float(summary.get('max_time_ratio', 0)):0.2f}%)<br>"
             f"평균: {summary.get('avg_time', 'N/A')} ({float(summary.get('avg_time_ratio', 0)):0.2f}%)<br>"
             f"시간대({summary.get('max_by_time_time', 'N/A')}) 최댓값: {summary.get('max_by_time', 'N/A')}회<br>"
-            f"시간대 평균값: {summary.get('avg_by_time', 'N/A')}회<br>"
+            f"시간대({summary.get('max_by_time_time', 'N/A')}) 최댓값 평균: {summary.get('avg_by_time', 'N/A'):0.0f}회<br>"
         )
     
     # 요약 정보 위치 조정 (그래프 높이에 따라)
