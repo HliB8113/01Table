@@ -240,8 +240,7 @@ if uploaded_file is not None and 'df' in locals():
             f"일일 최대 운영: {summary.get('max_time_unit', 'N/A')} {summary.get('max_time', 'N/A')} ({float(summary.get('max_time_ratio', 0)):0.2f}%)<br>"
             f"일일 평균 운영: {summary.get('avg_time', 'N/A')} ({float(summary.get('avg_time_ratio', 0)):0.2f}%)<br>"
         )
-    # 요약 정보 위치 조정 (그래프 높이에 따라)
-    annotation_y = 1.015 + (150 / graph_height)
+
     # Streamlit을 통해 플롯 보여주기
     st.plotly_chart(fig)
 
