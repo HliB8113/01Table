@@ -207,7 +207,7 @@ if uploaded_file is not None and 'df' in locals():
                 text=[f'{int(max_value)} {"대" if analysis_type == "운영 대수" else "회"}'],
                 textposition='top center',
                 textfont=dict(color='white', size=14)
-                hoverinfo= 'skip'
+                hoverinfo='skip'
             ))
 
     fig.update_layout(
