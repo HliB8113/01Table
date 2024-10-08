@@ -180,7 +180,7 @@ if uploaded_file is not None and 'df' in locals():
 
     # Heatmap 생성
     fig = make_subplots(rows=1, cols=1)
-    tooltip_texts = [[f'{int(val)} {"대" if analysis_type == "운영 대수" else "회"}' for val in row] for row in pivot_table.values]
+    tooltip_texts = [[f'월 최대 운영 횟수: {int(val)}회' if analysis_type == '운영 횟수' else f'시간대 최대 운영 대수: {int(val)}대' for val in row] for row in pivot_table.values]
     heatmap = go.Heatmap(
         z=pivot_table.values,
         x=pivot_table.columns,
