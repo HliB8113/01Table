@@ -275,4 +275,4 @@ if uploaded_file is not None and 'df' in locals():
     )
 
     # Streamlit을 통해 플롯 보여주기
-    st.plotly_chart(fig
+    st.plotly_chart(fig)
