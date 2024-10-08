@@ -75,8 +75,10 @@ if uploaded_file is not None and 'df' in locals():
             avg_operating_units_ratio = (avg_operating_units / total_operating_units) * 100 if total_operating_units > 0 else 0
 
             # 시간대별 최댓값 및 평균값 계산
-            max_by_time = filtered_df.groupby('시간대')[value_name].nunique().max()
-            avg_by_time = round(filtered_df.groupby('시간대')[value_name].nunique().mean())
+            max_by_time_series = filtered_df.groupby('시간대')[value_name].nunique()
+            max_by_time = max_by_time_series.max()
+            max_by_time_time = max_by_time_series.idxmax()
+            avg_by_time = round(max_by_time_series.mean())
 
             summary = {
                 'total_units': total_operating_units,
@@ -89,6 +91,7 @@ if uploaded_file is not None and 'df' in locals():
                 'avg_units': avg_operating_units,
                 'avg_units_ratio': avg_operating_units_ratio,
                 'max_by_time': max_by_time,
+                'max_by_time_time': max_by_time_time,
                 'avg_by_time': avg_by_time
             }
         else:
@@ -131,8 +134,10 @@ if uploaded_file is not None and 'df' in locals():
             avg_operating_time_ratio = (avg_operating_time / total_operating_time) * 100 if total_operating_time > 0 else 0
             
             # 시간대별 최댓값 및 평균값 계산
-            max_by_time = filtered_df.groupby('시간대')[value_name].count().max()
-            avg_by_time = round(filtered_df.groupby('시간대')[value_name].count().mean())
+            max_by_time_series = filtered_df.groupby('시간대')[value_name].count()
+            max_by_time = max_by_time_series.max()
+            max_by_time_time = max_by_time_series.idxmax()
+            avg_by_time = round(max_by_time_series.mean())
 
             def format_time(seconds):
                 hours, seconds = divmod(seconds, 3600)
@@ -164,6 +169,7 @@ if uploaded_file is not None and 'df' in locals():
                 'avg_time': avg_operating_time_formatted,
                 'avg_time_ratio': avg_operating_time_ratio,
                 'max_by_time': max_by_time,
+                'max_by_time_time': max_by_time_time,
                 'avg_by_time': avg_by_time
             }
         
@@ -231,7 +237,7 @@ if uploaded_file is not None and 'df' in locals():
             f"최소: {summary.get('min_units_day', 'N/A')} {summary.get('min_units', 'N/A')}대 ({float(summary.get('min_units_ratio', 0)):0.2f}%)<br>"
             f"최대: {summary.get('max_units_day', 'N/A')} {summary.get('max_units', 'N/A')}대 ({float(summary.get('max_units_ratio', 0)):0.2f}%)<br>"
             f"평균: {summary.get('avg_units', 'N/A')}대 ({float(summary.get('avg_units_ratio', 0)):0.2f}%)<br>"
-            f"시간대 최댓값: {summary.get('max_by_time', 'N/A')}대<br>"
+            f"시간대({summary.get('max_by_time_time', 'N/A')}) 최댓값: {summary.get('max_by_time', 'N/A')}대<br>"
             f"시간대 평균값: {summary.get('avg_by_time', 'N/A')}대<br>"
         )
     else:
@@ -246,7 +252,7 @@ if uploaded_file is not None and 'df' in locals():
             f"최소: {summary.get('min_time_unit', 'N/A')} {summary.get('min_time', 'N/A')} ({float(summary.get('min_time_ratio', 0)):0.2f}%)<br>"
             f"최대: {summary.get('max_time_unit', 'N/A')} {summary.get('max_time', 'N/A')} ({float(summary.get('max_time_ratio', 0)):0.2f}%)<br>"
             f"평균: {summary.get('avg_time', 'N/A')} ({float(summary.get('avg_time_ratio', 0)):0.2f}%)<br>"
-            f"시간대 최댓값: {summary.get('max_by_time', 'N/A')}회<br>"
+            f"시간대({summary.get('max_by_time_time', 'N/A')}) 최댓값: {summary.get('max_by_time', 'N/A')}회<br>"
             f"시간대 평균값: {summary.get('avg_by_time', 'N/A')}회<br>"
         )
     
@@ -269,4 +275,4 @@ if uploaded_file is not None and 'df' in locals():
     )
 
     # Streamlit을 통해 플롯 보여주기
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig
