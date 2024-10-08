@@ -150,4 +150,4 @@ if uploaded_file is not None and 'df' in locals():
                 'min_time_ratio': min_operating_time_ratio,
                 'max_time': max_operating_time_formatted,
                 'max_time_unit': max_time_unit,
-                'max'
+                'max'}
