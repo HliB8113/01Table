@@ -220,7 +220,7 @@ if uploaded_file is not None and 'df' in locals():
         plot_bgcolor='white',
         paper_bgcolor='white',
         margin=dict(l=50, r=50, t=150, b=50),
-        width=1200,  # 고정된 너비 (확장됨)
+        width=1800,  # 고정된 너비 (확장됨)
         height=graph_height,  # 조정 가능한 높이
         coloraxis_colorbar=dict(title='계급 크기')
     )
