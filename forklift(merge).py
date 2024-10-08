@@ -242,20 +242,11 @@ if uploaded_file is not None and 'df' in locals():
     # 요약 정보 위치 조정 (그래프 높이에 따라)
     annotation_y = 1.015 + (150 / graph_height)
 
-    fig.add_annotation(
-        text=summary_text,
-        align='left',
-        showarrow=False,
-        xref='paper',
-        yref='paper',
-        x=0,
-        y=annotation_y,
-        bordercolor='black',
-        borderwidth=1,
-        bgcolor='white',
-        opacity=0.8,
-        font=dict(color='black', size=20)  # 텍스트 색상을 검은색으로 지정, 폰트 크기 조정
+      # 텍스트 색상을 검은색으로 지정, 폰트 크기 조정
     )
 
     # Streamlit을 통해 플롯 보여주기
     st.plotly_chart(fig)
+
+    # 요약 정보를 히트맵 아래로 표시
+    st.markdown(summary_text, unsafe_allow_html=True)
