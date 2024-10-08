@@ -199,6 +199,9 @@ if uploaded_file is not None and 'df' in locals():
         title={
             'text': title,
             'x': 0.5
+            'font': {
+                'size': 24
+            }
         },
         xaxis=dict(title='시간대', fixedrange=True),
         yaxis=dict(title=index_name, categoryorder='array', categoryarray=sorted(pivot_table.index)),
