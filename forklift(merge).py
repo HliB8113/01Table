@@ -198,7 +198,7 @@ if uploaded_file is not None and 'df' in locals():
     fig.update_layout(
         title={
             'text': title,
-            'x': 0.2,
+            'x': 0.3,
             'font': {
                 'size': 24
             }
