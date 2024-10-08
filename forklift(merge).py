@@ -235,7 +235,7 @@ if uploaded_file is not None and 'df' in locals():
             f"전체: {summary.get('total_units', 'N/A')}대<br>"
             f"일일 최소 운영: {summary.get('min_units_day', 'N/A')} {summary.get('min_units', 'N/A')}대 ({float(summary.get('min_units_ratio', 0)):0.2f}%)<br>"
             f"일일 최대 운영: {summary.get('max_units_day', 'N/A')} {summary.get('max_units', 'N/A')}대 ({float(summary.get('max_units_ratio', 0)):0.2f}%)<br>"
-            f"평균: {summary.get('avg_units', 'N/A')}대 ({float(summary.get('avg_units_ratio', 0)):0.2f}%)<br>"
+            f"일일 평균 운영: {summary.get('avg_units', 'N/A')}대 ({float(summary.get('avg_units_ratio', 0)):0.2f}%)<br>"
             f"시간대({summary.get('max_by_time_time', 'N/A')}) 최댓값: {summary.get('max_by_time', 'N/A')}대<br>"
             f"시간대({summary.get('max_by_time_time', 'N/A')}) 최댓값 평균: {summary.get('avg_by_time', 'N/A'):0.0f}대<br>"
         )
@@ -245,7 +245,7 @@ if uploaded_file is not None and 'df' in locals():
             f"전체: {summary.get('total_counts', 'N/A')}번<br>"
             f"일일 최소 운영: {summary.get('min_counts_unit', 'N/A')} {summary.get('min_counts', 'N/A')}번 ({float(summary.get('min_counts_ratio', 0)):0.2f}%)<br>"
             f"일일 최대 운영: {summary.get('max_counts_unit', 'N/A')} {summary.get('max_counts', 'N/A')}번 ({float(summary.get('max_counts_ratio', 0)):0.2f}%)<br>"
-            f"평균: {summary.get('avg_counts', 'N/A')}번 ({float(summary.get('avg_counts_ratio', 0)):0.2f}%)<br>"
+            f"일일 평균 운영: {summary.get('avg_counts', 'N/A')}번 ({float(summary.get('avg_counts_ratio', 0)):0.2f}%)<br>"
             f"<b>운영 시간</b><br>"
             f"전체: {summary.get('total_time', 'N/A')}<br>"
             f"최소: {summary.get('min_time_unit', 'N/A')} {summary.get('min_time', 'N/A')} ({float(summary.get('min_time_ratio', 0)):0.2f}%)<br>"
