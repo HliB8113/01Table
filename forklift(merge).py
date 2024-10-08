@@ -192,7 +192,7 @@ if uploaded_file is not None and 'df' in locals():
                 marker=dict(size=12, color='yellow', symbol='circle'),
                 text=[f'{"동시 최대 투입:" if analysis_type == "운영 대수" else "시간대 최대 운영:"} {int(max_value)} {"대" if analysis_type == "운영 대수" else "회"}'],
                 textposition='top center',
-                textfont=dict(color='black', size=13)
+                textfont=dict(color='black', size=14)
             ))
 
     fig.update_layout(
@@ -205,7 +205,7 @@ if uploaded_file is not None and 'df' in locals():
         plot_bgcolor='white',
         paper_bgcolor='white',
         margin=dict(l=50, r=50, t=150, b=50),
-        width=1600,  # 고정된 너비 (확장됨)
+        width=1500,  # 고정된 너비 (확장됨)
         height=graph_height,  # 조정 가능한 높이
         coloraxis_colorbar=dict(title='계급 크기')
     )
