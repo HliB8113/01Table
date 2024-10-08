@@ -190,7 +190,7 @@ if uploaded_file is not None and 'df' in locals():
                 y=[pivot_table.index[y_idx]],
                 mode='markers+text',
                 marker=dict(size=12, color='yellow', symbol='circle'),
-                text=[f'{"동시 최대 투입:" if analysis_type == "운영 대수" else "시간대 최대 운영:"} {int(max_value)} {"대" if analysis_type == "운영 대수" else "회"}'],
+                text=[f'{"동시 최대 투입:" if analysis_type == "운영 대수" else "시간대 최대 운영(월):"} {int(max_value)} {"대" if analysis_type == "운영 대수" else "회"}'],
                 textposition='top center',
                 textfont=dict(color='black', size=14)
             ))
