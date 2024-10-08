@@ -206,8 +206,7 @@ if uploaded_file is not None and 'df' in locals():
                 marker=dict(size=12, color='yellow', symbol='circle'),
                 text=[f'{int(max_value)} {"대" if analysis_type == "운영 대수" else "회"}'],
                 textposition='top center',
-                textfont=dict(color='white', size=14, outlinecolor='black', outlinewidth=2),
-                hoverinfo='skip'
+                textfont=dict(color='white', size=14, outlinecolor='black', outlinewidth=2)
             ))
 
     fig.update_layout(
