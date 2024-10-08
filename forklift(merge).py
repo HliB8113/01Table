@@ -203,7 +203,7 @@ if uploaded_file is not None and 'df' in locals():
                 x=[pivot_table.columns[x_idx]],
                 y=[pivot_table.index[y_idx]],
                 mode='markers+text',
-                marker=dict(size=12, color='yellow', symbol='rectagle'),
+                marker=dict(size=12, color='yellow', symbol='rectangle'),
                 text=[f'{int(max_value)} {"대" if analysis_type == "운영 대수" else "회"}'],
                 textposition='top center',
                 textfont=dict(color='yellow'),
