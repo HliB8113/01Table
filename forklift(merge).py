@@ -166,7 +166,7 @@ if uploaded_file is not None and 'df' in locals():
 
     # Heatmap 생성
     fig = make_subplots(rows=1, cols=1)
-    tooltip_texts = [[f'운영 횟수: {int(val)}회' if analysis_type == '운영 횟수' else f'운영 대수: {int(val)}대' for val in row] for row in pivot_table.values]
+    tooltip_texts = [[f'월 최대 운영 횟수: {int(val)}회' if analysis_type == '운영 횟수' else f'시간대 최대 운영 대수: {int(val)}대' for val in row] for row in pivot_table.values]
     heatmap = go.Heatmap(
         z=pivot_table.values,
         x=pivot_table.columns,
@@ -192,7 +192,7 @@ if uploaded_file is not None and 'df' in locals():
                 marker=dict(size=12, color='yellow', symbol='circle'),
                 text=[f'{"동시 최대 투입:" if analysis_type == "운영 대수" else "시간대 최대 운영:"} {int(max_value)} {"대" if analysis_type == "운영 대수" else "회"}'],
                 textposition='top center',
-                textfont=dict(color='white', size=14)
+                textfont=dict(color='black', size=14)
             ))
 
     fig.update_layout(
