@@ -74,6 +74,7 @@ if uploaded_file is not None and 'df' in locals():
             max_operating_units_ratio = (max_operating_units / total_operating_units) * 100 if total_operating_units > 0 else 0
             avg_operating_units_ratio = (avg_operating_units / total_operating_units) * 100 if total_operating_units > 0 else 0
 
+            
             summary = {
                 'total_units': total_operating_units,
                 'min_units': min_operating_units,
@@ -83,7 +84,8 @@ if uploaded_file is not None and 'df' in locals():
                 'max_units_day': max_operating_day,
                 'max_units_ratio': max_operating_units_ratio,
                 'avg_units': avg_operating_units,
-                'avg_units_ratio': avg_operating_units_ratio
+                'avg_units_ratio': avg_operating_units_ratio,
+                
             }
         else:
             index_name = '차대 코드'
@@ -123,7 +125,8 @@ if uploaded_file is not None and 'df' in locals():
             min_operating_time_ratio = (min_operating_time / total_operating_time) * 100 if total_operating_time > 0 else 0
             max_operating_time_ratio = (max_operating_time / total_operating_time) * 100 if total_operating_time > 0 else 0
             avg_operating_time_ratio = (avg_operating_time / total_operating_time) * 100 if total_operating_time > 0 else 0
-
+            
+            
             def format_time(seconds):
                 hours, seconds = divmod(seconds, 3600)
                 minutes, seconds = divmod(seconds, 60)
@@ -152,7 +155,8 @@ if uploaded_file is not None and 'df' in locals():
                 'max_time_unit': max_time_unit,
                 'max_time_ratio': max_operating_time_ratio,
                 'avg_time': avg_operating_time_formatted,
-                'avg_time_ratio': avg_operating_time_ratio
+                'avg_time_ratio': avg_operating_time_ratio,
+                
             }
         
         pivot_table = filtered_df.pivot_table(index=index_name, columns='시간대', values=value_name, aggfunc=agg_func).fillna(0)
@@ -161,3 +165,86 @@ if uploaded_file is not None and 'df' in locals():
     pivot_table, title, index_name, summary = generate_pivot(selected_month, selected_department, selected_process, selected_forklift_class, selected_workplace)
 
     # Heatmap 생성
+    fig = make_subplots(rows=1, cols=1)
+    tooltip_texts = [[f'월 최대 운영 횟수: {int(val)}회' if analysis_type == '운영 횟수' else f'시간대 최대 운영 대수: {int(val)}대' for val in row] for row in pivot_table.values]
+    heatmap = go.Heatmap(
+        z=pivot_table.values,
+        x=pivot_table.columns,
+        y=pivot_table.index,
+        colorscale=[[0, 'white'], [1, 'purple']],
+        hoverinfo='text',
+        text=tooltip_texts,
+        zmin=0,
+        zmax=pivot_table.values.max()
+    )
+    fig.add_trace(heatmap)
+
+    # 최댓값 하이라이트 추가
+    max_value = pivot_table.values.max()
+    max_indices = list(zip(*[(i, j) for i, row in enumerate(pivot_table.values) for j, val in enumerate(row) if val == max_value]))
+    if max_indices:
+        max_y_indices, max_x_indices = max_indices
+        for y_idx, x_idx in zip(max_y_indices, max_x_indices):
+            fig.add_trace(go.Scatter(
+                x=[pivot_table.columns[x_idx]],
+                y=[pivot_table.index[y_idx]],
+                mode='markers+text',
+                marker=dict(size=12, color='yellow', symbol='circle'),
+                text=[f'{"동시 최대 투입:" if analysis_type == "운영 대수" else "시간대 최대 운영:"} {int(max_value)} {"대" if analysis_type == "운영 대수" else "회"}'],
+                textposition='top center',
+                textfont=dict(color='black', size=14)
+            ))
+
+    fig.update_layout(
+        title={
+            'text': title,
+            'x': 0.5
+        },
+        xaxis=dict(title='시간대', fixedrange=True),
+        yaxis=dict(title=index_name, categoryorder='array', categoryarray=sorted(pivot_table.index)),
+        plot_bgcolor='white',
+        paper_bgcolor='white',
+        margin=dict(l=50, r=50, t=150, b=50),
+        width=1500,  # 고정된 너비 (확장됨)
+        height=graph_height,  # 조정 가능한 높이
+        coloraxis_colorbar=dict(title='계급 크기')
+    )
+    
+    # 모든 '시작 날짜'를 세로축에 표시 (월일만 표시)
+    if analysis_type == '운영 대수':
+        fig.update_yaxes(type='category', tickmode='array', tickvals=sorted(pivot_table.index))
+
+    # 요약 정보를 가로로 배치하여 표시
+    if analysis_type == '운영 대수':
+        summary_text = (
+            f"<b>운영 대수</b><br>"
+            f"전체: {summary.get('total_units', 'N/A')}대<br>"
+            f"일일 최소 운영: {summary.get('min_units_day', 'N/A')} {summary.get('min_units', 'N/A')}대 ({float(summary.get('min_units_ratio', 0)):0.2f}%)<br>"
+            f"일일 최대 운영: {summary.get('max_units_day', 'N/A')} {summary.get('max_units', 'N/A')}대 ({float(summary.get('max_units_ratio', 0)):0.2f}%)<br>"
+            f"일일 평균 운영: {summary.get('avg_units', 'N/A')}대 ({float(summary.get('avg_units_ratio', 0)):0.2f}%)<br>"
+            
+        )
+    else:
+        summary_text = (
+            f"<b>운영 횟수</b><br>"
+            f"전체: {summary.get('total_counts', 'N/A')}번<br>"
+            f"일일 최소 운영: {summary.get('min_counts_unit', 'N/A')} {summary.get('min_counts', 'N/A')}번 ({float(summary.get('min_counts_ratio', 0)):0.2f}%)<br>"
+            f"일일 최대 운영: {summary.get('max_counts_unit', 'N/A')} {summary.get('max_counts', 'N/A')}번 ({float(summary.get('max_counts_ratio', 0)):0.2f}%)<br>"
+            f"일일 평균 운영: {summary.get('avg_counts', 'N/A')}번 ({float(summary.get('avg_counts_ratio', 0)):0.2f}%)<br>"
+            f"<b>운영 시간</b><br>"
+            f"전체: {summary.get('total_time', 'N/A')}<br>"
+            f"일일 최소 운영: {summary.get('min_time_unit', 'N/A')} {summary.get('min_time', 'N/A')} ({float(summary.get('min_time_ratio', 0)):0.2f}%)<br>"
+            f"일일 최대 운영: {summary.get('max_time_unit', 'N/A')} {summary.get('max_time', 'N/A')} ({float(summary.get('max_time_ratio', 0)):0.2f}%)<br>"
+            f"일일 평균 운영: {summary.get('avg_time', 'N/A')} ({float(summary.get('avg_time_ratio', 0)):0.2f}%)<br>"
+            
+        )
+    
+    # 요약 정보 위치 조정 (그래프 높이에 따라)
+    annotation_y = 1.015 + (150 / graph_height)
+
+      # 텍스트 색상을 검은색으로 지정, 폰트 크기 조정
+    # Streamlit을 통해 플롯 보여주기
+    st.plotly_chart(fig)
+
+    # 요약 정보를 히트맵 아래로 표시
+    st.markdown(summary_text, unsafe_allow_html=True)
