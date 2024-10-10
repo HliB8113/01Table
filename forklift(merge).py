@@ -158,4 +158,15 @@ if uploaded_file is not None and 'df' in locals():
             }
         
         pivot_table = filtered_df.pivot_table(index=index_name, columns='시간대', values=value_name, aggfunc=agg_func).fillna(0)
-        return pivot_table
+        # 시간대별 최대 평균 운영 대수/운영 횟수/운영 시간 계산
+        if analysis_type == '운영 대수':
+            max_avg_by_time = filtered_df.groupby('시간대')[value_name].nunique().mean()
+            summary['시간대 최대 평균 운영 대수'] = round(max_avg_by_time, 2)
+        elif analysis_type == '운영 횟수':
+            max_avg_by_time = filtered_df.groupby('시간대')[value_name].count().mean()
+            summary['시간대 최대 평균 운영 횟수'] = round(max_avg_by_time, 2)
+        else:
+            max_avg_by_time = filtered_df.groupby('시간대')['운영 시간(초)'].mean()
+            summary['시간대 최대 평균 운영 시간'] = format_time(round(max_avg_by_time))
+
+        return pivot_table, summary
