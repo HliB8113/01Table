@@ -39,15 +39,6 @@ index_name = "데이터 선택"
 # 메인 페이지 설정
 if uploaded_file is not None and 'df' in locals():
     def generate_pivot(month, department, process, forklift_class, workplace):
-        def calculate_max_avg_by_time(filtered_df, value_name):
-            avg_by_time = filtered_df.groupby('시간대')[value_name].mean()
-            max_avg_value = avg_by_time.max()
-            max_avg_time = avg_by_time.idxmax()
-            return max_avg_value, max_avg_time
-        def calculate_max_avg_by_time(filtered_df, value_name):
-            avg_by_time = filtered_df.groupby('시간대')[value_name].nunique().mean() if value_name == '차대 코드' else filtered_df.groupby('시간대')[value_name].count().mean()
-            max_by_time_series = filtered_df.groupby('시간대')[value_name].nunique()
-            
         filtered_df = df.copy()
         if month != '전체':
             filtered_df = filtered_df[filtered_df['월'] == month]
@@ -61,7 +52,7 @@ if uploaded_file is not None and 'df' in locals():
             filtered_df = filtered_df[filtered_df['작업 장소'] == workplace]
 
         if analysis_type == '운영 대수':
-                        filtered_df['시작 날짜'] = filtered_df['시작 날짜'].dt.strftime('%m-%d')
+            filtered_df['시작 날짜'] = filtered_df['시작 날짜'].dt.strftime('%m-%d')
             index_name = '시작 날짜'
             value_name = '차대 코드'
             agg_func = 'nunique'
@@ -83,14 +74,6 @@ if uploaded_file is not None and 'df' in locals():
             max_operating_units_ratio = (max_operating_units / total_operating_units) * 100 if total_operating_units > 0 else 0
             avg_operating_units_ratio = (avg_operating_units / total_operating_units) * 100 if total_operating_units > 0 else 0
 
-            # 시간대별 최대 평균 운영 대수 계산
-            avg_by_time_series = filtered_df.groupby('시간대')[value_name].nunique().mean()
-            max_avg_units_time = filtered_df.groupby('시간대')[value_name].nunique().idxmax()
-            max_avg_units = filtered_df.groupby('시간대')[value_name].nunique().max()
-
-            
-            # 시간대별 최대 평균 운영 대수 계산
-            max_avg_units, max_avg_units_time = calculate_max_avg_by_time(filtered_df, value_name)
             summary = {
                 'total_units': total_operating_units,
                 'min_units': min_operating_units,
@@ -100,12 +83,10 @@ if uploaded_file is not None and 'df' in locals():
                 'max_units_day': max_operating_day,
                 'max_units_ratio': max_operating_units_ratio,
                 'avg_units': avg_operating_units,
-                'avg_units_ratio': avg_operating_units_ratio,
-                '시간대 최대 평균 운영 대수': f'시간대({max_avg_units_time}) 최대 평균 운영 대수: {max_avg_units}대',
-                '시간대 최대 평균 운영 대수': f'{max_avg_units_time} 최대 평균 운영 대수: {max_avg_units}대'
+                'avg_units_ratio': avg_operating_units_ratio
             }
         else:
-                        index_name = '차대 코드'
+            index_name = '차대 코드'
             value_name = '시작 날짜'
             agg_func = 'count'
             title = '지게차 시간대별 운영 횟수'
@@ -143,15 +124,6 @@ if uploaded_file is not None and 'df' in locals():
             max_operating_time_ratio = (max_operating_time / total_operating_time) * 100 if total_operating_time > 0 else 0
             avg_operating_time_ratio = (avg_operating_time / total_operating_time) * 100 if total_operating_time > 0 else 0
 
-            # 시간대별 최대 평균 운영 횟수 및 시간 계산
-            avg_counts_by_time_series = filtered_df.groupby('시간대')[value_name].count().mean()
-            max_avg_counts_time = filtered_df.groupby('시간대')[value_name].count().idxmax()
-            max_avg_counts = filtered_df.groupby('시간대')[value_name].count().max()
-
-            avg_time_by_time_series = filtered_df.groupby('시간대')['운영 시간(초)'].mean().mean()
-            max_avg_time_time = filtered_df.groupby('시간대')['운영 시간(초)'].mean().idxmax()
-            max_avg_time = filtered_df.groupby('시간대')['운영 시간(초)'].mean().max()
-
             def format_time(seconds):
                 hours, seconds = divmod(seconds, 3600)
                 minutes, seconds = divmod(seconds, 60)
@@ -162,10 +134,6 @@ if uploaded_file is not None and 'df' in locals():
             avg_operating_time_formatted = format_time(avg_operating_time)
             total_operating_time_formatted = format_time(total_operating_time)
             
-            
-            # 시간대별 최대 평균 운영 횟수 및 운영 시간 계산
-            max_avg_counts, max_avg_counts_time = calculate_max_avg_by_time(filtered_df, value_name)
-            max_avg_time, max_avg_time_time = calculate_max_avg_by_time(filtered_df, '운영 시간(초)')
             summary = {
                 'total_counts': total_operating_counts,
                 'min_counts': min_operating_counts,
@@ -184,11 +152,7 @@ if uploaded_file is not None and 'df' in locals():
                 'max_time_unit': max_time_unit,
                 'max_time_ratio': max_operating_time_ratio,
                 'avg_time': avg_operating_time_formatted,
-                'avg_time_ratio': avg_operating_time_ratio,
-                '시간대 최대 평균 운영 횟수': f'시간대({max_avg_counts_time}) 최대 평균 운영 횟수: {max_avg_counts}회',
-                '시간대 최대 평균 운영 시간': f'시간대({max_avg_time_time}) 최대 평균 운영 시간: {max_avg_time}초',
-                '시간대 최대 평균 운영 횟수': f'{max_avg_counts_time} 최대 평균 운영 횟수: {max_avg_counts}회',
-                '시간대 최대 평균 운영 시간': f'{max_avg_time_time} 최대 평균 운영 시간: {max_avg_time}초'
+                'avg_time_ratio': avg_operating_time_ratio
             }
         
         pivot_table = filtered_df.pivot_table(index=index_name, columns='시간대', values=value_name, aggfunc=agg_func).fillna(0)
@@ -197,5 +161,3 @@ if uploaded_file is not None and 'df' in locals():
     pivot_table, title, index_name, summary = generate_pivot(selected_month, selected_department, selected_process, selected_forklift_class, selected_workplace)
 
     # Heatmap 생성
-    fig = make_subplots(rows=1, cols=1)
-    tooltip_texts = [[f'월 최대 운영 횟수: {int(val)}회' if analysis_type == '운영 횟수' else f'시간대 최대 운영 대수: {int(val)}대'
