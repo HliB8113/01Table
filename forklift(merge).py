@@ -39,6 +39,8 @@ index_name = "데이터 선택"
 # 메인 페이지 설정
 if uploaded_file is not None and 'df' in locals():
     def generate_pivot(month, department, process, forklift_class, workplace):
+        def calculate_max_average(grouped_df):
+            return grouped_df.mean().max() if not grouped_df.empty else None
         filtered_df = df.copy()
         if month != '전체':
             filtered_df = filtered_df[filtered_df['월'] == month]
@@ -75,16 +77,10 @@ if uploaded_file is not None and 'df' in locals():
             avg_operating_units_ratio = (avg_operating_units / total_operating_units) * 100 if total_operating_units > 0 else 0
 
             summary = {
-                'total_units': total_operating_units,
-                'min_units': min_operating_units,
-                'min_units_day': min_operating_day,
-                'min_units_ratio': min_operating_units_ratio,
-                'max_units': max_operating_units,
-                'max_units_day': max_operating_day,
-                'max_units_ratio': max_operating_units_ratio,
-                'avg_units': avg_operating_units,
-                'avg_units_ratio': avg_operating_units_ratio,
-                'max_avg_units': daily_counts.mean() if not daily_counts.empty else None
+                ,
+                'max_avg_units': calculate_max_average(filtered_df.groupby('시간대')[value_name]) if analysis_type == '운영 대수' else None,
+                'max_avg_counts': calculate_max_average(filtered_df.groupby('시간대')[value_name]) if analysis_type == '운영 횟수' else None,
+                'max_avg_time': calculate_max_average(filtered_df.groupby('시간대')['운영 시간(초)']) if analysis_type == '운영 횟수' else None
             }
         else:
             index_name = '차대 코드'
