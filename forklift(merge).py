@@ -176,4 +176,25 @@ if uploaded_file is not None and 'df' in locals():
             max_avg_by_time = filtered_df.groupby('시간대')['운영 시간(초)'].mean().mean()
             summary['시간대 최대 평균 운영 시간'] = format_time(round(max_avg_by_time))
 
-        return pivot_table, summary
+        ""
+        # 각 시간대별 최대 평균 계산
+        time_avg_operating_units = pivot_table.mean(axis=0).max() if analysis_type == '운영 대수' else None
+        time_avg_operating_units_time = pivot_table.mean(axis=0).idxmax() if analysis_type == '운영 대수' else None
+        time_avg_operating_counts = pivot_table.mean(axis=0).max() if analysis_type == '운영 횟수' else None
+        time_avg_operating_counts_time = pivot_table.mean(axis=0).idxmax() if analysis_type == '운영 횟수' else None
+        time_avg_operating_times = pivot_table.mean(axis=0).max() if analysis_type == '운영 시간' else None
+        time_avg_operating_times_time = pivot_table.mean(axis=0).idxmax() if analysis_type == '운영 시간' else None
+        
+        # 요약 정보에 추가
+        if analysis_type == '운영 대수':
+            summary['time_avg_units'] = time_avg_operating_units
+            summary['time_avg_units_time'] = time_avg_operating_units_time
+        elif analysis_type == '운영 횟수':
+            summary['time_avg_counts'] = time_avg_operating_counts
+            summary['time_avg_counts_time'] = time_avg_operating_counts_time
+        elif analysis_type == '운영 시간':
+            summary['time_avg_time'] = time_avg_operating_times
+            summary['time_avg_time_time'] = time_avg_operating_times_time
+
+        return pivot_table
+      "", summary
