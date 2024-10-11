@@ -219,7 +219,7 @@ if uploaded_file is not None and 'df' in locals():
     if analysis_type == '운영 대수':
         summary_text = (
             f"<b>운영 대수(Day)</b><br>"
-            f"전체: {summary.get('total_units', 'N/A')}대)<br>"
+            f"전체: {summary.get('total_units', 'N/A')}대<br>"
             f"최소: {summary.get('min_units_day', 'N/A')} {summary.get('min_units', 'N/A')}대 ({float(summary.get('min_units_ratio', 0)):0.2f}%)<br>"
             f"최대: {summary.get('max_units_day', 'N/A')} {summary.get('max_units', 'N/A')}대 ({float(summary.get('max_units_ratio', 0)):0.2f}%)<br>"
             f"평균: {summary.get('avg_units', 'N/A')}대 ({float(summary.get('avg_units_ratio', 0)):0.2f}%)<br>"
