@@ -69,6 +69,11 @@ if uploaded_file is not None and 'df' in locals():
             max_operating_day = daily_counts.idxmax() if not daily_counts.empty else '데이터 없음'
             avg_operating_units = round(daily_counts.mean()) if not daily_counts.empty else 0
 
+            # 시간대 평균값 계산
+            time_avg = filtered_df.pivot_table(index='시작 날짜', columns='시간대', values=value_name, aggfunc='nunique').mean()
+            max_time_avg_value = time_avg.max()
+            max_time_avg_time = time_avg.idxmax()
+
             # 비율 계산
             min_operating_units_ratio = (min_operating_units / total_operating_units) * 100 if total_operating_units > 0 else 0
             max_operating_units_ratio = (max_operating_units / total_operating_units) * 100 if total_operating_units > 0 else 0
@@ -85,7 +90,8 @@ if uploaded_file is not None and 'df' in locals():
                 'max_units_ratio': max_operating_units_ratio,
                 'avg_units': avg_operating_units,
                 'avg_units_ratio': avg_operating_units_ratio,
-                
+                'max_time_avg_time': max_time_avg_time,
+                'max_time_avg_value': max_time_avg_value,
             }
         else:
             index_name = '차대 코드'
@@ -104,39 +110,16 @@ if uploaded_file is not None and 'df' in locals():
             # 전체 운영 횟수 계산
             total_operating_counts = unit_counts.sum()
             
+            # 시간대 평균값 계산
+            time_avg = filtered_df.pivot_table(index='차대 코드', columns='시간대', values=value_name, aggfunc='count').mean()
+            max_time_avg_value = time_avg.max()
+            max_time_avg_time = time_avg.idxmax()
+
             # 비율 계산
             min_operating_counts_ratio = (min_operating_counts / total_operating_counts) * 100 if total_operating_counts > 0 else 0
             max_operating_counts_ratio = (max_operating_counts / total_operating_counts) * 100 if total_operating_counts > 0 else 0
             avg_operating_counts_ratio = (avg_operating_counts / total_operating_counts) * 100 if total_operating_counts > 0 else 0
 
-            # 운영 시간 계산
-            filtered_df['운영 시간(초)'] = pd.to_numeric(filtered_df['운영 시간(초)'], errors='coerce').fillna(0).astype(int)
-            operating_times = filtered_df.groupby('차대 코드')['운영 시간(초)'].sum()
-            min_operating_time = operating_times.min()
-            max_operating_time = operating_times.max()
-            min_time_unit = operating_times.idxmin() if not operating_times.empty else '데이터 없음'
-            max_time_unit = operating_times.idxmax() if not operating_times.empty else '데이터 없음'
-            avg_operating_time = round(operating_times.mean()) if not operating_times.empty else 0
-            
-            # 전체 운영 시간 계산
-            total_operating_time = operating_times.sum()
-
-            # 비율 계산
-            min_operating_time_ratio = (min_operating_time / total_operating_time) * 100 if total_operating_time > 0 else 0
-            max_operating_time_ratio = (max_operating_time / total_operating_time) * 100 if total_operating_time > 0 else 0
-            avg_operating_time_ratio = (avg_operating_time / total_operating_time) * 100 if total_operating_time > 0 else 0
-            
-            
-            def format_time(seconds):
-                hours, seconds = divmod(seconds, 3600)
-                minutes, seconds = divmod(seconds, 60)
-                return f"{hours:02}:{minutes:02}:{seconds:02}"
-
-            min_operating_time_formatted = format_time(min_operating_time)
-            max_operating_time_formatted = format_time(max_operating_time)
-            avg_operating_time_formatted = format_time(avg_operating_time)
-            total_operating_time_formatted = format_time(total_operating_time)
-            
             summary = {
                 'total_counts': total_operating_counts,
                 'min_counts': min_operating_counts,
@@ -147,46 +130,11 @@ if uploaded_file is not None and 'df' in locals():
                 'max_counts_ratio': max_operating_counts_ratio,
                 'avg_counts': avg_operating_counts,
                 'avg_counts_ratio': avg_operating_counts_ratio,
-                'total_time': total_operating_time_formatted,
-                'min_time': min_operating_time_formatted,
-                'min_time_unit': min_time_unit,
-                'min_time_ratio': min_operating_time_ratio,
-                'max_time': max_operating_time_formatted,
-                'max_time_unit': max_time_unit,
-                'max_time_ratio': max_operating_time_ratio,
-                'avg_time': avg_operating_time_formatted,
-                'avg_time_ratio': avg_operating_time_ratio,
-                
+                'max_time_avg_time': max_time_avg_time,
+                'max_time_avg_value': max_time_avg_value,
             }
         
         pivot_table = filtered_df.pivot_table(index=index_name, columns='시간대', values=value_name, aggfunc=agg_func).fillna(0)
-        
-        # 시간대별 평균 계산
-        average_by_time = pivot_table.mean(axis=0)
-        max_average_value = average_by_time.max()
-        max_average_time = average_by_time.idxmax()
-        st.markdown(f"시간대 평균 최댓값: {max_average_time} {int(max_average_value)}대")
-        
-        summary['max_average_time'] = f"시간대 평균 최댓값: {max_average_time} {int(max_average_value)}대"
-
-        if analysis_type == '운영 횟수':
-            # 시간대별 평균 계산 (운영 횟수)
-            average_counts_by_time = pivot_table.mean(axis=0)
-            max_average_counts_value = average_counts_by_time.max()
-            max_average_counts_time = average_counts_by_time.idxmax()
-            st.markdown(f"시간대 평균 최댓값 (운영 횟수): {max_average_counts_time} {int(max_average_counts_value)}회")
-            
-            summary['max_average_counts_time'] = f"시간대 평균 최댓값 (운영 횟수): {max_average_counts_time} {int(max_average_counts_value)}회"
-
-            # 시간대별 평균 계산 (운영 시간)
-            average_time_by_unit = operating_times.mean()
-            max_average_time_value = operating_times.max()
-            max_average_time_unit = operating_times.idxmax()
-            formatted_max_average_time = format_time(max_average_time_value)
-            st.markdown(f"운영 시간 평균 최댓값: {max_average_time_unit} {formatted_max_average_time}")
-            
-            summary['max_average_operating_time'] = f"운영 시간 평균 최댓값: {max_average_time_unit} {formatted_max_average_time}"
-        
         return pivot_table, title, index_name, summary
 
     pivot_table, title, index_name, summary = generate_pivot(selected_month, selected_department, selected_process, selected_forklift_class, selected_workplace)
@@ -250,7 +198,7 @@ if uploaded_file is not None and 'df' in locals():
             f"최소: {summary.get('min_units_day', 'N/A')} {summary.get('min_units', 'N/A')}대 ({float(summary.get('min_units_ratio', 0)):0.2f}%)<br>"
             f"최대: {summary.get('max_units_day', 'N/A')} {summary.get('max_units', 'N/A')}대 ({float(summary.get('max_units_ratio', 0)):0.2f}%)<br>"
             f"평균: {summary.get('avg_units', 'N/A')}대 ({float(summary.get('avg_units_ratio', 0)):0.2f}%)<br>"
-            f"{summary.get('max_average_time', 'N/A')}<br>"
+            f"시간대 평균 최댓값: {summary.get('max_time_avg_time', 'N/A')} {int(summary.get('max_time_avg_value', 0))}대<br>"
         )
     else:
         summary_text = (
@@ -261,15 +209,7 @@ if uploaded_file is not None and 'df' in locals():
             f"최소: {summary.get('min_counts_unit', 'N/A')} {summary.get('min_counts', 'N/A')}번 ({float(summary.get('min_counts_ratio', 0)):0.2f}%)<br>"
             f"최대: {summary.get('max_counts_unit', 'N/A')} {summary.get('max_counts', 'N/A')}번 ({float(summary.get('max_counts_ratio', 0)):0.2f}%)<br>"
             f"평균: {summary.get('avg_counts', 'N/A')}번 ({float(summary.get('avg_counts_ratio', 0)):0.2f}%)<br>"
-            f"{summary.get('max_average_counts_time', 'N/A')}<br>"
-            f"</div>"
-            f"<div>"
-            f"<b>운영 시간(Day)</b><br>"
-            f"전체: {summary.get('total_time', 'N/A')}<br>"
-            f"최소: {summary.get('min_time_unit', 'N/A')} {summary.get('min_time', 'N/A')} ({float(summary.get('min_time_ratio', 0)):0.2f}%)<br>"
-            f"최대: {summary.get('max_time_unit', 'N/A')} {summary.get('max_time', 'N/A')} ({float(summary.get('max_time_ratio', 0)):0.2f}%)<br>"
-            f"평균: {summary.get('avg_time', 'N/A')} ({float(summary.get('avg_time_ratio', 0)):0.2f}%)<br>"
-            f"{summary.get('max_average_operating_time', 'N/A')}<br>"
+            f"시간대 평균 최댓값: {summary.get('max_time_avg_time', 'N/A')} {int(summary.get('max_time_avg_value', 0))}번<br>"
             f"</div>"
             f"</div>"
         )
