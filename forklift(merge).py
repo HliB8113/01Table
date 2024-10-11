@@ -160,15 +160,16 @@ if uploaded_file is not None and 'df' in locals():
             }
         
         pivot_table = filtered_df.pivot_table(index=index_name, columns='시간대', values=value_name, aggfunc=agg_func).fillna(0)
+        
+        # 시간대별 평균 계산
+        average_by_time = pivot_table.mean(axis=0)
+        max_average_value = average_by_time.max()
+        max_average_time = average_by_time.idxmax()
+        st.markdown(f"시간대 평균 최댓값: {max_average_time} {int(max_average_value)}대")
+        
         return pivot_table, title, index_name, summary
 
     pivot_table, title, index_name, summary = generate_pivot(selected_month, selected_department, selected_process, selected_forklift_class, selected_workplace)
-
-    # 시간대별 평균값 계산 및 최댓값 출력
-    average_by_time = pivot_table.mean(axis=0)
-    max_average_value = average_by_time.max()
-    max_average_time = average_by_time.idxmax()
-    st.write(f"시간대 평균 최댓값: {max_average_time} {int(max_average_value)}대")
 
     # Heatmap 생성
     fig = make_subplots(rows=1, cols=1)
