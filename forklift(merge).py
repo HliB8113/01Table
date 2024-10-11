@@ -126,6 +126,11 @@ if uploaded_file is not None and 'df' in locals():
             max_operating_time_ratio = (max_operating_time / total_operating_time) * 100 if total_operating_time > 0 else 0
             avg_operating_time_ratio = (avg_operating_time / total_operating_time) * 100 if total_operating_time > 0 else 0
             
+            # 시간대별 평균 운영 대수, 평균 운영 횟수, 평균 운영 시간 계산
+            average_operating_counts_per_time = filtered_df.pivot_table(index='시간대', values=value_name, aggfunc='count').mean().max()
+            average_operating_time_per_time = filtered_df.pivot_table(index='시간대', values='운영 시간(초)', aggfunc='mean').mean().max()
+            average_operating_units_per_time = filtered_df.pivot_table(index='시간대', values='차대 코드', aggfunc='nunique').mean().max()
+            
             
             def format_time(seconds):
                 hours, seconds = divmod(seconds, 3600)
@@ -136,10 +141,6 @@ if uploaded_file is not None and 'df' in locals():
             max_operating_time_formatted = format_time(max_operating_time)
             avg_operating_time_formatted = format_time(avg_operating_time)
             total_operating_time_formatted = format_time(total_operating_time)
-            
-            # 시간대를 기준으로 평균값 계산
-            average_by_time = filtered_df.groupby('시간대')['운영 시간(초)'].mean().fillna(0)
-            average_by_time_formatted = average_by_time.apply(format_time)
             
             summary = {
                 'total_counts': total_operating_counts,
@@ -160,7 +161,9 @@ if uploaded_file is not None and 'df' in locals():
                 'max_time_ratio': max_operating_time_ratio,
                 'avg_time': avg_operating_time_formatted,
                 'avg_time_ratio': avg_operating_time_ratio,
-                'average_by_time': average_by_time_formatted
+                'max_avg_operating_counts_per_time': average_operating_counts_per_time,
+                'max_avg_operating_time_per_time': format_time(average_operating_time_per_time),
+                'max_avg_operating_units_per_time': average_operating_units_per_time
             }
         
         pivot_table = filtered_df.pivot_table(index=index_name, columns='시간대', values=value_name, aggfunc=agg_func).fillna(0)
@@ -226,6 +229,7 @@ if uploaded_file is not None and 'df' in locals():
             f"일일 최소 운영: {summary.get('min_units_day', 'N/A')} {summary.get('min_units', 'N/A')}대 ({float(summary.get('min_units_ratio', 0)):0.2f}%)<br>"
             f"일일 최대 운영: {summary.get('max_units_day', 'N/A')} {summary.get('max_units', 'N/A')}대 ({float(summary.get('max_units_ratio', 0)):0.2f}%)<br>"
             f"일일 평균 운영: {summary.get('avg_units', 'N/A')}대 ({float(summary.get('avg_units_ratio', 0)):0.2f}%)<br>"
+            f"시간대별 최대 평균 운영 대수: {summary.get('max_avg_operating_units_per_time', 'N/A')}대<br>"
         )
     else:
         summary_text = (
@@ -235,16 +239,14 @@ if uploaded_file is not None and 'df' in locals():
             f"일일 최소 운영: {summary.get('min_counts_unit', 'N/A')} {summary.get('min_counts', 'N/A')}번 ({float(summary.get('min_counts_ratio', 0)):0.2f}%)<br>"
             f"일일 최대 운영: {summary.get('max_counts_unit', 'N/A')} {summary.get('max_counts', 'N/A')}번 ({float(summary.get('max_counts_ratio', 0)):0.2f}%)<br>"
             f"일일 평균 운영: {summary.get('avg_counts', 'N/A')}번 ({float(summary.get('avg_counts_ratio', 0)):0.2f}%)<br>"
+            f"시간대별 최대 평균 운영 횟수: {summary.get('max_avg_operating_counts_per_time', 'N/A')}번<br>"
             f"</div>"
-            f"<div style='margin-right: 50px;'>"
+            f"<div>"
             f"<b>운영 시간 전체: {summary.get('total_time', 'N/A')}</b><br>"
             f"일일 최소 운영 시간: {summary.get('min_time_unit', 'N/A')} {summary.get('min_time', 'N/A')} ({float(summary.get('min_time_ratio', 0)):0.2f}%)<br>"
             f"일일 최대 운영 시간: {summary.get('max_time_unit', 'N/A')} {summary.get('max_time', 'N/A')} ({float(summary.get('max_time_ratio', 0)):0.2f}%)<br>"
             f"일일 평균 운영 시간: {summary.get('avg_time', 'N/A')} ({float(summary.get('avg_time_ratio', 0)):0.2f}%)<br>"
-            f"</div>"
-            f"<div>"
-            f"<b>시간대별 평균 운영 시간:</b><br>"
-            f"{summary.get('average_by_time').to_frame().to_html(index=True, header=False, border=0)}"
+            f"시간대별 최대 평균 운영 시간: {summary.get('max_avg_operating_time_per_time', 'N/A')}<br>"
             f"</div>"
             f"</div>"
         )
