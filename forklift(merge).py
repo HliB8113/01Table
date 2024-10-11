@@ -167,6 +167,8 @@ if uploaded_file is not None and 'df' in locals():
         max_average_time = average_by_time.idxmax()
         st.markdown(f"시간대 평균 최댓값: {max_average_time} {int(max_average_value)}대")
         
+        summary['max_average_time'] = f"시간대 평균 최댓값: {max_average_time} {int(max_average_value)}대"
+        
         return pivot_table, title, index_name, summary
 
     pivot_table, title, index_name, summary = generate_pivot(selected_month, selected_department, selected_process, selected_forklift_class, selected_workplace)
@@ -230,6 +232,7 @@ if uploaded_file is not None and 'df' in locals():
             f"최소: {summary.get('min_units_day', 'N/A')} {summary.get('min_units', 'N/A')}대 ({float(summary.get('min_units_ratio', 0)):0.2f}%)<br>"
             f"최대: {summary.get('max_units_day', 'N/A')} {summary.get('max_units', 'N/A')}대 ({float(summary.get('max_units_ratio', 0)):0.2f}%)<br>"
             f"평균: {summary.get('avg_units', 'N/A')}대 ({float(summary.get('avg_units_ratio', 0)):0.2f}%)<br>"
+            f"{summary.get('max_average_time', 'N/A')}<br>"
         )
     else:
         summary_text = (
