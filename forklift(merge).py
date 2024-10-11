@@ -168,6 +168,24 @@ if uploaded_file is not None and 'df' in locals():
         st.markdown(f"시간대 평균 최댓값: {max_average_time} {int(max_average_value)}대")
         
         summary['max_average_time'] = f"시간대 평균 최댓값: {max_average_time} {int(max_average_value)}대"
+
+        if analysis_type == '운영 횟수':
+            # 시간대별 평균 계산 (운영 횟수)
+            average_counts_by_time = pivot_table.mean(axis=0)
+            max_average_counts_value = average_counts_by_time.max()
+            max_average_counts_time = average_counts_by_time.idxmax()
+            st.markdown(f"시간대 평균 최댓값 (운영 횟수): {max_average_counts_time} {int(max_average_counts_value)}회")
+            
+            summary['max_average_counts_time'] = f"시간대 평균 최댓값 (운영 횟수): {max_average_counts_time} {int(max_average_counts_value)}회"
+
+            # 시간대별 평균 계산 (운영 시간)
+            average_time_by_unit = operating_times.mean()
+            max_average_time_value = operating_times.max()
+            max_average_time_unit = operating_times.idxmax()
+            formatted_max_average_time = format_time(max_average_time_value)
+            st.markdown(f"운영 시간 평균 최댓값: {max_average_time_unit} {formatted_max_average_time}")
+            
+            summary['max_average_operating_time'] = f"운영 시간 평균 최댓값: {max_average_time_unit} {formatted_max_average_time}"
         
         return pivot_table, title, index_name, summary
 
@@ -243,6 +261,7 @@ if uploaded_file is not None and 'df' in locals():
             f"최소: {summary.get('min_counts_unit', 'N/A')} {summary.get('min_counts', 'N/A')}번 ({float(summary.get('min_counts_ratio', 0)):0.2f}%)<br>"
             f"최대: {summary.get('max_counts_unit', 'N/A')} {summary.get('max_counts', 'N/A')}번 ({float(summary.get('max_counts_ratio', 0)):0.2f}%)<br>"
             f"평균: {summary.get('avg_counts', 'N/A')}번 ({float(summary.get('avg_counts_ratio', 0)):0.2f}%)<br>"
+            f"{summary.get('max_average_counts_time', 'N/A')}<br>"
             f"</div>"
             f"<div>"
             f"<b>운영 시간(Day)</b><br>"
@@ -250,6 +269,7 @@ if uploaded_file is not None and 'df' in locals():
             f"최소: {summary.get('min_time_unit', 'N/A')} {summary.get('min_time', 'N/A')} ({float(summary.get('min_time_ratio', 0)):0.2f}%)<br>"
             f"최대: {summary.get('max_time_unit', 'N/A')} {summary.get('max_time', 'N/A')} ({float(summary.get('max_time_ratio', 0)):0.2f}%)<br>"
             f"평균: {summary.get('avg_time', 'N/A')} ({float(summary.get('avg_time_ratio', 0)):0.2f}%)<br>"
+            f"{summary.get('max_average_operating_time', 'N/A')}<br>"
             f"</div>"
             f"</div>"
         )
