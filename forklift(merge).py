@@ -164,6 +164,12 @@ if uploaded_file is not None and 'df' in locals():
 
     pivot_table, title, index_name, summary = generate_pivot(selected_month, selected_department, selected_process, selected_forklift_class, selected_workplace)
 
+    # 시간대별 평균값 계산 및 최댓값 출력
+    average_by_time = pivot_table.mean(axis=0)
+    max_average_value = average_by_time.max()
+    max_average_time = average_by_time.idxmax()
+    st.write(f"시간대 평균 최댓값: {max_average_time} {int(max_average_value)}대")
+
     # Heatmap 생성
     fig = make_subplots(rows=1, cols=1)
     tooltip_texts = [[f'운영 횟수: {int(val)}회' if analysis_type == '운영 횟수' else f'운영 대수: {int(val)}대' for val in row] for row in pivot_table.values]
