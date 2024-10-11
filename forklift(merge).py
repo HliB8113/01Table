@@ -74,6 +74,8 @@ if uploaded_file is not None and 'df' in locals():
             max_operating_units_ratio = (max_operating_units / total_operating_units) * 100 if total_operating_units > 0 else 0
             avg_operating_units_ratio = (avg_operating_units / total_operating_units) * 100 if total_operating_units > 0 else 0
 
+            # 시간대별 평균 운영 대수 계산
+            average_operating_units_per_time = int(filtered_df.pivot_table(index='시간대', values='차대 코드', aggfunc='nunique').mean().max())
             
             summary = {
                 'total_units': total_operating_units,
@@ -85,7 +87,7 @@ if uploaded_file is not None and 'df' in locals():
                 'max_units_ratio': max_operating_units_ratio,
                 'avg_units': avg_operating_units,
                 'avg_units_ratio': avg_operating_units_ratio,
-                
+                'max_avg_operating_units_per_time': average_operating_units_per_time
             }
         else:
             index_name = '차대 코드'
@@ -127,10 +129,8 @@ if uploaded_file is not None and 'df' in locals():
             avg_operating_time_ratio = (avg_operating_time / total_operating_time) * 100 if total_operating_time > 0 else 0
             
             # 시간대별 평균 운영 대수, 평균 운영 횟수, 평균 운영 시간 계산
-            average_operating_counts_per_time = filtered_df.pivot_table(index='시간대', values=value_name, aggfunc='count').mean().max()
-            average_operating_time_per_time = filtered_df.pivot_table(index='시간대', values='운영 시간(초)', aggfunc='mean').mean().max()
-            average_operating_units_per_time = filtered_df.pivot_table(index='시간대', values='차대 코드', aggfunc='nunique').mean().max()
-            
+            average_operating_counts_per_time = int(filtered_df.pivot_table(index='시간대', values=value_name, aggfunc='count').mean().max())
+            average_operating_time_per_time = int(filtered_df.pivot_table(index='시간대', values='운영 시간(초)', aggfunc='mean').mean().max())
             
             def format_time(seconds):
                 hours, seconds = divmod(seconds, 3600)
@@ -141,6 +141,7 @@ if uploaded_file is not None and 'df' in locals():
             max_operating_time_formatted = format_time(max_operating_time)
             avg_operating_time_formatted = format_time(avg_operating_time)
             total_operating_time_formatted = format_time(total_operating_time)
+            average_operating_time_formatted = format_time(average_operating_time_per_time)
             
             summary = {
                 'total_counts': total_operating_counts,
@@ -162,8 +163,7 @@ if uploaded_file is not None and 'df' in locals():
                 'avg_time': avg_operating_time_formatted,
                 'avg_time_ratio': avg_operating_time_ratio,
                 'max_avg_operating_counts_per_time': average_operating_counts_per_time,
-                'max_avg_operating_time_per_time': format_time(average_operating_time_per_time),
-                'max_avg_operating_units_per_time': average_operating_units_per_time
+                'max_avg_operating_time_per_time': average_operating_time_formatted
             }
         
         pivot_table = filtered_df.pivot_table(index=index_name, columns='시간대', values=value_name, aggfunc=agg_func).fillna(0)
