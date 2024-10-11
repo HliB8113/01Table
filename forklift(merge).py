@@ -227,7 +227,7 @@ if uploaded_file is not None and 'df' in locals():
         summary_text = (
             f"<div style='display: flex; flex-direction: row; align-items: flex-start;'>"
             f"<div style='margin-right: 50px;'>"
-            f"<b>일일 운영 횟수(Day)(전체: {summary.get('total_counts', 'N/A')}번)</b><br>"
+            f"<b>일일 운영 횟수(전체: {summary.get('total_counts', 'N/A')}번)</b><br>"
             f"최소: {summary.get('min_counts_unit', 'N/A')} {summary.get('min_counts', 'N/A')}번 ({float(summary.get('min_counts_ratio', 0)):0.2f}%)<br>"
             f"최대: {summary.get('max_counts_unit', 'N/A')} {summary.get('max_counts', 'N/A')}번 ({float(summary.get('max_counts_ratio', 0)):0.2f}%)<br>"
             f"평균: {summary.get('avg_counts', 'N/A')}번 ({float(summary.get('avg_counts_ratio', 0)):0.2f}%)<br>"
