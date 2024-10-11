@@ -225,13 +225,20 @@ if uploaded_file is not None and 'df' in locals():
         )
     else:
         summary_text = (
-            f"<b>운영 횟수 전체: {summary.get('total_counts', 'N/A')}번 &nbsp;&nbsp;&nbsp;&nbsp; 운영 시간 전체: {summary.get('total_time', 'N/A')}</b><br>"
-            f"일일 최소 운영: {summary.get('min_counts_unit', 'N/A')} {summary.get('min_counts', 'N/A')}번 ({float(summary.get('min_counts_ratio', 0)):0.2f}%) &nbsp;&nbsp;&nbsp;&nbsp; "
+            f"<div style='display: flex; flex-direction: row; align-items: flex-start;'>"
+            f"<div style='margin-right: 50px;'>"
+            f"<b>운영 횟수 전체: {summary.get('total_counts', 'N/A')}번</b><br>"
+            f"일일 최소 운영: {summary.get('min_counts_unit', 'N/A')} {summary.get('min_counts', 'N/A')}번 ({float(summary.get('min_counts_ratio', 0)):0.2f}%)<br>"
+            f"일일 최대 운영: {summary.get('max_counts_unit', 'N/A')} {summary.get('max_counts', 'N/A')}번 ({float(summary.get('max_counts_ratio', 0)):0.2f}%)<br>"
+            f"일일 평균 운영: {summary.get('avg_counts', 'N/A')}번 ({float(summary.get('avg_counts_ratio', 0)):0.2f}%)<br>"
+            f"</div>"
+            f"<div>"
+            f"<b>운영 시간 전체: {summary.get('total_time', 'N/A')}</b><br>"
             f"일일 최소 운영 시간: {summary.get('min_time_unit', 'N/A')} {summary.get('min_time', 'N/A')} ({float(summary.get('min_time_ratio', 0)):0.2f}%)<br>"
-            f"일일 최대 운영: {summary.get('max_counts_unit', 'N/A')} {summary.get('max_counts', 'N/A')}번 ({float(summary.get('max_counts_ratio', 0)):0.2f}%) &nbsp;&nbsp;&nbsp;&nbsp; "
             f"일일 최대 운영 시간: {summary.get('max_time_unit', 'N/A')} {summary.get('max_time', 'N/A')} ({float(summary.get('max_time_ratio', 0)):0.2f}%)<br>"
-            f"일일 평균 운영: {summary.get('avg_counts', 'N/A')}번 ({float(summary.get('avg_counts_ratio', 0)):0.2f}%) &nbsp;&nbsp;&nbsp;&nbsp; "
             f"일일 평균 운영 시간: {summary.get('avg_time', 'N/A')} ({float(summary.get('avg_time_ratio', 0)):0.2f}%)<br>"
+            f"</div>"
+            f"</div>"
         )
     
     # 요약 정보 위치 조정 (그래프 높이에 따라)
