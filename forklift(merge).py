@@ -11,7 +11,7 @@ with st.sidebar:
     uploaded_file = st.file_uploader("파일을 업로드하세요.", type=["csv"])
     if uploaded_file is not None:
         df = pd.read_csv(uploaded_file)
-        
+
         # 시간대를 시간 형식으로 변환
         df['시간대'] = pd.to_datetime(df['시간대'], format='%H:%M', errors='coerce').dt.strftime('%H:%M')
 
@@ -27,7 +27,7 @@ with st.sidebar:
         analysis_type = st.radio("분석 유형 선택:", ('운영 대수', '운영 횟수'))
         selected_month = st.selectbox('월 선택:', ['전체'] + sorted(df['월'].dropna().unique().tolist()))
         selected_department = st.selectbox('부서 선택:', ['전체'] + sorted(df['부서'].dropna().unique().tolist()))
-        selected_process = st.selectbox('공정 선택:', ['전체'] + sorted(df['공정'].dropna().unique().tolist()))
+        # selected_process = st.selectbox('공정 선택:', ['전체'] + sorted(df['공정'].dropna().unique().tolist())) # <-- 공정 선택 드롭다운 제거
         selected_forklift_class = st.selectbox('차대 분류 선택:', ['전체'] + sorted(df['차대 분류'].dropna().unique().tolist()))
         selected_workplace = st.selectbox('작업 장소 선택:', ['전체'] + sorted(df['작업 장소'].dropna().unique().tolist()))
         graph_height = st.slider('그래프 높이 선택', 300, 1500, 900)
@@ -38,14 +38,15 @@ index_name = "데이터 선택"
 
 # 메인 페이지 설정
 if uploaded_file is not None and 'df' in locals():
-    def generate_pivot(month, department, process, forklift_class, workplace):
+    # def generate_pivot(month, department, process, forklift_class, workplace): # <-- process 매개변수 제거
+    def generate_pivot(month, department, forklift_class, workplace):
         filtered_df = df.copy()
         if month != '전체':
             filtered_df = filtered_df[filtered_df['월'] == month]
         if department != '전체':
             filtered_df = filtered_df[filtered_df['부서'] == department]
-        if process != '전체':
-            filtered_df = filtered_df[filtered_df['공정'] == process]
+        # if process != '전체': # <-- process 필터링 로직 제거
+        #     filtered_df = filtered_df[filtered_df['공정'] == process]
         if forklift_class != '전체':
             filtered_df = filtered_df[filtered_df['차대 분류'] == forklift_class]
         if workplace != '전체':
@@ -57,10 +58,10 @@ if uploaded_file is not None and 'df' in locals():
             value_name = '차대 코드'
             agg_func = 'nunique'
             title = '지게차 일자별 운영 대수'
-            
+
             # 월 전체 운영 대수 계산
             total_operating_units = filtered_df[value_name].nunique()
-            
+
             # 월 최소 및 최대 운영 대수 계산
             daily_counts = filtered_df.groupby('시작 날짜')[value_name].nunique()
             min_operating_units = daily_counts.min()
@@ -74,7 +75,6 @@ if uploaded_file is not None and 'df' in locals():
             max_operating_units_ratio = (max_operating_units / total_operating_units) * 100 if total_operating_units > 0 else 0
             avg_operating_units_ratio = (avg_operating_units / total_operating_units) * 100 if total_operating_units > 0 else 0
 
-            
             summary = {
                 'total_units': total_operating_units,
                 'min_units': min_operating_units,
@@ -85,14 +85,13 @@ if uploaded_file is not None and 'df' in locals():
                 'max_units_ratio': max_operating_units_ratio,
                 'avg_units': avg_operating_units,
                 'avg_units_ratio': avg_operating_units_ratio,
-                
             }
-        else:
+        else: # analysis_type == '운영 횟수'
             index_name = '차대 코드'
             value_name = '시작 날짜'
             agg_func = 'count'
             title = '지게차 시간대별 운영 횟수'
-            
+
             # 월 최소 및 최대 운영 횟수 계산
             unit_counts = filtered_df.groupby(['차대 코드'])[value_name].count()
             min_operating_counts = unit_counts.min()
@@ -103,7 +102,7 @@ if uploaded_file is not None and 'df' in locals():
 
             # 전체 운영 횟수 계산
             total_operating_counts = unit_counts.sum()
-            
+
             # 비율 계산
             min_operating_counts_ratio = (min_operating_counts / total_operating_counts) * 100 if total_operating_counts > 0 else 0
             max_operating_counts_ratio = (max_operating_counts / total_operating_counts) * 100 if total_operating_counts > 0 else 0
@@ -117,7 +116,7 @@ if uploaded_file is not None and 'df' in locals():
             min_time_unit = operating_times.idxmin() if not operating_times.empty else '데이터 없음'
             max_time_unit = operating_times.idxmax() if not operating_times.empty else '데이터 없음'
             avg_operating_time = round(operating_times.mean()) if not operating_times.empty else 0
-            
+
             # 전체 운영 시간 계산
             total_operating_time = operating_times.sum()
 
@@ -125,8 +124,7 @@ if uploaded_file is not None and 'df' in locals():
             min_operating_time_ratio = (min_operating_time / total_operating_time) * 100 if total_operating_time > 0 else 0
             max_operating_time_ratio = (max_operating_time / total_operating_time) * 100 if total_operating_time > 0 else 0
             avg_operating_time_ratio = (avg_operating_time / total_operating_time) * 100 if total_operating_time > 0 else 0
-            
-            
+
             def format_time(seconds):
                 hours, seconds = divmod(seconds, 3600)
                 minutes, seconds = divmod(seconds, 60)
@@ -136,7 +134,7 @@ if uploaded_file is not None and 'df' in locals():
             max_operating_time_formatted = format_time(max_operating_time)
             avg_operating_time_formatted = format_time(avg_operating_time)
             total_operating_time_formatted = format_time(total_operating_time)
-            
+
             summary = {
                 'total_counts': total_operating_counts,
                 'min_counts': min_operating_counts,
@@ -156,13 +154,13 @@ if uploaded_file is not None and 'df' in locals():
                 'max_time_ratio': max_operating_time_ratio,
                 'avg_time': avg_operating_time_formatted,
                 'avg_time_ratio': avg_operating_time_ratio,
-                
             }
-        
+
         pivot_table = filtered_df.pivot_table(index=index_name, columns='시간대', values=value_name, aggfunc=agg_func).fillna(0)
         return pivot_table, title, index_name, summary
 
-    pivot_table, title, index_name, summary = generate_pivot(selected_month, selected_department, selected_process, selected_forklift_class, selected_workplace)
+    # pivot_table, title, index_name, summary = generate_pivot(selected_month, selected_department, selected_process, selected_forklift_class, selected_workplace) # <-- selected_process 인자 제거
+    pivot_table, title, index_name, summary = generate_pivot(selected_month, selected_department, selected_forklift_class, selected_workplace)
 
     # Heatmap 생성
     fig = make_subplots(rows=1, cols=1)
@@ -210,7 +208,7 @@ if uploaded_file is not None and 'df' in locals():
         height=graph_height,  # 조정 가능한 높이
         coloraxis_colorbar=dict(title='계급 크기')
     )
-    
+
     # 모든 '시작 날짜'를 세로축에 표시 (월일만 표시)
     if analysis_type == '운영 대수':
         fig.update_yaxes(type='category', tickmode='array', tickvals=sorted(pivot_table.index))
@@ -224,7 +222,7 @@ if uploaded_file is not None and 'df' in locals():
             f"최대: {summary.get('max_units_day', 'N/A')} {summary.get('max_units', 'N/A')}대 ({float(summary.get('max_units_ratio', 0)):0.2f}%)<br>"
             f"평균: {summary.get('avg_units', 'N/A')}대 ({float(summary.get('avg_units_ratio', 0)):0.2f}%)<br>"
         )
-    else:
+    else: # analysis_type == '운영 횟수'
         summary_text = (
             f"<div style='display: flex; flex-direction: row; align-items: flex-start;'>"
             f"<div style='margin-right: 50px;'>"
@@ -243,7 +241,7 @@ if uploaded_file is not None and 'df' in locals():
             f"</div>"
             f"</div>"
         )
-    
+
     # 요약 정보 위치 조정 (그래프 높이에 따라)
     annotation_y = 1.015 + (150 / graph_height)
 
