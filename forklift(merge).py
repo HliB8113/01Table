@@ -229,11 +229,23 @@ if df is not None and not df.empty:
         # --- 그래프 생성 ---
         fig = make_subplots(rows=1, cols=1)
 
-        # 툴팁 텍스트 생성
-        if analysis_type == '운영 횟수':
-            tooltip_texts = [[f'운영 횟수: {int(val)}회' for val in row] for row in pivot_table.values]
-        else: # 운영 대수
-            tooltip_texts = [[f'운영 대수: {int(val)}대' for val in row] for row in pivot_table.values]
+        # --- 수정된 툴팁 텍스트 생성 (좌표 포함) ---
+        tooltip_texts = []
+        value_prefix = "운영 횟수" if analysis_type == '운영 횟수' else "운영 대수"
+        value_suffix = "회" if analysis_type == '운영 횟수' else "대"
+
+        # 피벗 테이블의 각 셀을 순회하며 툴팁 생성
+        for r in range(len(pivot_table.index)):
+            y_label = pivot_table.index[r] # 현재 행의 Y축 레이블
+            row_tooltips = []
+            for c in range(len(pivot_table.columns)):
+                x_label = pivot_table.columns[c] # 현재 열의 X축 레이블
+                value = pivot_table.iloc[r, c] # 현재 셀의 값
+                # Y축, X축 레이블과 값을 포함하는 툴팁 문자열 생성 (<br>은 줄바꿈)
+                cell_tooltip = f"{y_label}, {x_label}<br>{value_prefix}: {int(value)}{value_suffix}"
+                row_tooltips.append(cell_tooltip)
+            tooltip_texts.append(row_tooltips)
+        # --- 툴팁 생성 끝 ---
 
         # 히트맵 생성
         heatmap = go.Heatmap(
@@ -241,8 +253,8 @@ if df is not None and not df.empty:
             x=pivot_table.columns,
             y=pivot_table.index,
             colorscale='Purples',
-            hoverinfo='text', # 각 셀에 대한 텍스트 정보만 호버에 표시
-            text=tooltip_texts,
+            hoverinfo='text',       # 'text' 모드를 사용하여 아래 'text' 인수에 전달된 내용 표시
+            text=tooltip_texts,     # 위에서 생성한 사용자 정의 툴팁 텍스트 리스트 전달
             zmin=0,
             colorbar=dict(title='값' if analysis_type == '운영 대수' else '횟수')
         )
@@ -269,12 +281,12 @@ if df is not None and not df.empty:
                                     text=[f'<b>{highlight_text_prefix} {int(max_value)}{highlight_text_suffix}</b>'],
                                     textposition='top right',
                                     textfont=dict(color='red', size=12, family="Arial, sans-serif"),
-                                    hoverinfo='none' # 최대값 마커는 호버 정보 없음
+                                    hoverinfo='none'
                                 ))
             except Exception as e:
                  st.warning(f"⚠️ 최대값 하이라이트 중 오류 발생: {e}")
 
-        # --- 레이아웃 업데이트 (Spikelines 추가) ---
+        # --- 레이아웃 업데이트 (Spikelines 포함) ---
         fig.update_layout(
             title={
                 'text': title, 'y':0.95, 'x':0.5, 'xanchor': 'center', 'yanchor': 'top',
@@ -282,24 +294,17 @@ if df is not None and not df.empty:
             },
             xaxis=dict(
                 title='시간대', fixedrange=True, tickangle=0,
-                showspikes=True, # X축 Spikeline 활성화
-                spikemode='across', # 스파이크가 플롯 영역을 가로지르도록 설정
-                spikesnap='data', # 데이터 포인트에 스냅
-                spikethickness=1,
-                spikecolor='grey' # 스파이크 색상
+                showspikes=True, spikemode='across', spikesnap='data',
+                spikethickness=1, spikecolor='grey'
             ),
             yaxis=dict(
                 title=y_axis_title, fixedrange=True,
-                showspikes=True, # Y축 Spikeline 활성화
-                spikemode='across',
-                spikesnap='data',
-                spikethickness=1,
-                spikecolor='grey'
+                showspikes=True, spikemode='across', spikesnap='data',
+                spikethickness=1, spikecolor='grey'
             ),
             plot_bgcolor='rgba(245, 245, 245, 1)', paper_bgcolor='white',
             margin=dict(l=100, r=50, t=100, b=80), height=graph_height,
-            hovermode='closest', # 가장 가까운 데이터 포인트에 대한 정보 표시 (Spikeline과 함께 사용)
-            # hoverdistance=-1, # 필요시 호버 거리 조정
+            hovermode='closest', # Spikeline과 함께 사용
             coloraxis_colorbar=dict(
                 title='운영 대수' if analysis_type == '운영 대수' else '운영 횟수',
             )
@@ -343,7 +348,7 @@ if df is not None and not df.empty:
              st.info("요약 정보를 표시할 데이터가 없습니다.")
 
     elif uploaded_file is not None:
-        pass # generate_pivot 함수 내에서 이미 경고 메시지 표시됨
+        pass
 
 elif uploaded_file is None:
     st.info("👈 사이드바에서 CSV 파일을 업로드하고 옵션을 선택하면 분석 결과를 볼 수 있습니다.")
