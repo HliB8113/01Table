@@ -402,4 +402,35 @@ if df is not None and not df.empty:
                 with count_cols[2]:
                     st.metric(label=f"최소 운영 ({summary.get('min_counts_unit', 'N/A')})", value=f"{summary.get('min_counts', 'N/A')} 회", delta=f"{summary.get('min_counts_ratio', 0):.1f}%", delta_color="inverse")
                 with count_cols[3]:
-                    st.metric(label=f"최대 운영 ({summary.get('max_counts_unit', 'N/A')})", value=f"{summary.get('max_counts
+                    st.metric(label=f"최대 운영 ({summary.get('max_counts_unit', 'N/A')})", value=f"{summary.get('max_counts', 'N/A')} 회", delta=f"{summary.get('max_counts_ratio', 0):.1f}%", delta_color="normal")
+
+                st.markdown("---")
+                st.markdown("##### ⏱️ 운영 시간 요약 (차량별)")
+                time_cols = st.columns(4)
+                with time_cols[0]:
+                     st.metric(label="전체 운영 시간", value=f"{summary.get('total_time', 'N/A')}")
+                with time_cols[1]:
+                     st.metric(label="차량 평균 운영 시간", value=f"{summary.get('avg_time', 'N/A')}", delta=f"{summary.get('avg_time_ratio', 0):.1f}%", delta_color="off")
+                with time_cols[2]:
+                     st.metric(label=f"최소 운영 ({summary.get('min_time_unit', 'N/A')})", value=f"{summary.get('min_time', 'N/A')}", delta=f"{summary.get('min_time_ratio', 0):.1f}%", delta_color="inverse")
+                with time_cols[3]:
+                     st.metric(label=f"최대 운영 ({summary.get('max_time_unit', 'N/A')})", value=f"{summary.get('max_time', 'N/A')}", delta=f"{summary.get('max_time_ratio', 0):.1f}%", delta_color="normal")
+
+        else: # summary가 비어있는 경우 (generate_pivot에서 빈 dict 반환 시)
+             st.info("요약 정보를 표시할 데이터가 없습니다.")
+
+    # 피벗 테이블 생성 실패 또는 필터링 결과 데이터 없는 경우
+    elif uploaded_file is not None: # 파일은 업로드되었으나 피벗테이블 생성 불가
+        # generate_pivot 함수 내에서 이미 경고 메시지 표시됨
+        pass # 추가 메시지 불필요
+
+# 파일이 업로드되지 않은 초기 상태
+elif uploaded_file is None:
+    st.info("👈 사이드바에서 CSV 파일을 업로드하고 옵션을 선택하면 분석 결과를 볼 수 있습니다.")
+
+# 그 외 파일 처리 중 오류 발생 시 (df가 None으로 설정됨)
+else:
+    # df 변수가 정의되지 않았거나 None일 때 (초기 로딩/처리 단계 오류)
+    # sidebar에서 이미 오류 메시지가 표시되었을 가능성이 높음
+    if 'df' not in locals() or df is None:
+         st.warning("파일을 처리하는 중 오류가 발생했습니다. 사이드바에서 오류 메시지를 확인하거나 파일을 다시 업로드해주세요.")
