@@ -372,4 +372,18 @@ if df is not None and not df.empty:
                         f"📈 <b>최대 운영 차량:</b> {summary.get('max_time_unit', 'N/A')} ({summary.get('max_time', 'N/A')}, 전체의 {summary.get('max_time_ratio', 0):.2f}%)<br>"
                         f"📊 <b>차량 평균 운영 시간:</b> {summary.get('avg_time', 'N/A')} (전체의 {summary.get('avg_time_ratio', 0):.2f}%)"
                     )
-                    st.markdown(summary_text_time, unsafe_allow_html=
+                    st.markdown(summary_text_time, unsafe_allow_html=True)
+        else:
+             st.info("요약 정보를 표시할 데이터가 없습니다.")
+
+    # 만약 generate_pivot 함수에서 빈 테이블을 반환했다면 (데이터 없음 경고 후)
+    elif uploaded_file is not None and df is not None and df.empty:
+         # df가 비어있지만 파일은 업로드 된 경우 (전처리 후 데이터 없음)
+         st.warning("파일 로딩 및 전처리 후 분석 가능한 데이터가 없습니다. 필터 조건을 확인하거나 원본 데이터를 확인해주세요.")
+    # 그 외의 경우 (예: 파일 업로드 안됨)
+    # else:
+    #     st.info("분석할 파일을 업로드해주세요.")
+
+# 파일 업로드되지 않았을 때 초기 메시지
+if uploaded_file is None:
+    st.info("사이드바에서 CSV 파일을 업로드하면 분석 결과를 볼 수 있습니다.")
