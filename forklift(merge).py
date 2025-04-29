@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objs as go
 from plotly.subplots import make_subplots
-import numpy as np # numpy 추가
+import numpy as np
 
 # Streamlit 페이지 설정
 st.set_page_config(page_title='My Streamlit App', layout='wide', initial_sidebar_state='expanded')
@@ -22,66 +22,99 @@ with st.sidebar:
 
             st.success("파일 로딩 성공!")
 
+            # <<< 컬럼명 앞뒤 공백 제거 >>>
+            df_initial.columns = df_initial.columns.str.strip()
+            st.write("Debug: Cleaned column names:", df_initial.columns.tolist()) # 디버깅용: 정리된 컬럼명 확인
+
             # --- 필수 컬럼 확인 ---
+            # 실제 파일에 있는 컬럼명 기반으로 확인
             required_columns = ['시간대', '시작 날짜', '차대 코드', '운영 시간(초)']
-            optional_columns = ['부서', '공정', '차대 분류', '작업 장소']
+            optional_columns = ['부서', '공정', '차대 분류', '작업 장소'] # 공정은 없을 수 있음
+
             missing_required = [col for col in required_columns if col not in df_initial.columns]
             missing_optional = [col for col in optional_columns if col not in df_initial.columns]
 
             if missing_required:
-                st.error(f"오류: 필수 컬럼이 누락되었습니다 - {', '.join(missing_required)}. 분석을 진행할 수 없습니다.")
-                st.stop() # 앱 실행 중지
+                st.error(f"오류: 필수 컬럼이 누락되었습니다 - {', '.join(missing_required)}. 컬럼명을 확인하세요.")
+                st.stop()
             else:
-                df = df_initial.copy() # 필수 컬럼 확인 후 df에 할당
+                df = df_initial.copy()
 
             if missing_optional:
-                st.warning(f"경고: 다음 필터링 컬럼이 누락되었습니다 - {', '.join(missing_optional)}. 해당 필터는 작동하지 않습니다.")
+                st.warning(f"경고: 다음 필터링 컬럼이 누락되었습니다 - {', '.join(missing_optional)}. 해당 필터는 작동하지 않거나 '정보 없음'으로 표시됩니다.")
+                # 누락된 선택적 컬럼을 빈 값 또는 기본값으로 추가
                 for col in missing_optional:
-                    df[col] = '정보 없음'
+                    if col not in df.columns: # 이미 존재하지 않는 경우에만 추가
+                       df[col] = '정보 없음'
+
 
             # --- 데이터 타입 변환 ---
             try:
-                df['시간대'] = pd.to_datetime(df['시간대'], format='%H:%M', errors='coerce').dt.strftime('%H:%M')
-                df.dropna(subset=['시간대'], inplace=True)
-                if df.empty:
-                    st.warning("시간대 변환 후 유효한 데이터가 없습니다.")
+                # '시간대' 컬럼이 존재하는지 다시 확인 후 변환
+                if '시간대' in df.columns:
+                    df['시간대'] = pd.to_datetime(df['시간대'], format='%H:%M', errors='coerce').dt.strftime('%H:%M')
+                    df.dropna(subset=['시간대'], inplace=True)
+                    if df.empty:
+                        st.warning("시간대 변환 후 유효한 데이터가 없습니다.")
+                        st.stop()
+                else:
+                    st.error("'시간대' 컬럼이 존재하지 않아 시간 변환을 수행할 수 없습니다.")
                     st.stop()
             except Exception as e:
                 st.error(f"'시간대' 컬럼 변환 중 오류 발생: {e}. 컬럼 형식을 확인하세요 (예: HH:MM).")
                 st.stop()
 
             try:
-                df['시작 날짜'] = pd.to_datetime(df['시작 날짜'], errors='coerce')
-                df.dropna(subset=['시작 날짜'], inplace=True)
-                if df.empty:
-                    st.warning("시작 날짜 변환 후 유효한 데이터가 없습니다.")
+                # '시작 날짜' 컬럼이 존재하는지 다시 확인 후 변환
+                if '시작 날짜' in df.columns:
+                    df['시작 날짜'] = pd.to_datetime(df['시작 날짜'], errors='coerce')
+                    df.dropna(subset=['시작 날짜'], inplace=True)
+                    if df.empty:
+                        st.warning("시작 날짜 변환 후 유효한 데이터가 없습니다.")
+                        st.stop()
+                    df['월'] = df['시작 날짜'].dt.month
+                else:
+                    st.error("'시작 날짜' 컬럼이 존재하지 않아 날짜 변환 및 월 추출을 수행할 수 없습니다.")
                     st.stop()
-                df['월'] = df['시작 날짜'].dt.month
             except Exception as e:
                 st.error(f"'시작 날짜' 컬럼 변환 중 오류 발생: {e}. 날짜 형식을 확인하세요.")
                 st.stop()
 
-            df['운영 시간(초)'] = pd.to_numeric(df['운영 시간(초)'], errors='coerce').fillna(0).astype(int)
+            # '운영 시간(초)' 컬럼이 존재하는지 다시 확인 후 변환
+            if '운영 시간(초)' in df.columns:
+                df['운영 시간(초)'] = pd.to_numeric(df['운영 시간(초)'], errors='coerce').fillna(0).astype(int)
+            else:
+                st.error("'운영 시간(초)' 컬럼이 존재하지 않아 숫자 변환을 수행할 수 없습니다.")
+                # 필요하다면 여기서 st.stop() 처리
+                # 다만, 운영 시간 분석이 아닌 경우 일단 진행 가능하게 둘 수도 있음
+                st.warning("'운영 시간(초)' 컬럼이 없어 운영 시간 관련 분석은 제한됩니다.")
+                df['운영 시간(초)'] = 0 # 기본값 0으로 컬럼 생성 또는 다른 처리
 
-            # 12월 데이터 제외
-            excluded_month = 12
-            df = df[df['월'] != excluded_month]
+            # 12월 데이터 제외 (월 컬럼이 성공적으로 생성되었는지 확인)
+            if '월' in df.columns:
+                excluded_month = 12
+                df = df[df['월'] != excluded_month]
+            else:
+                st.warning("'월' 정보를 추출할 수 없어 12월 데이터 제외 로직을 건너<0xEB><0x87>니다.")
+
 
             if df.empty:
-                st.warning("12월 제외 후 분석할 데이터가 없습니다.")
+                st.warning("데이터 처리 후 분석할 데이터가 없습니다.")
                 st.stop()
 
             # --- 드롭다운 메뉴 설정 ---
             analysis_type = st.radio("분석 유형 선택:", ('운영 대수', '운영 횟수'))
-            month_options = ['전체'] + sorted(df['월'].dropna().unique().astype(int).tolist())
+
+            # 각 필터링 컬럼 존재 여부 확인하며 옵션 생성
+            month_options = ['전체'] + sorted(df['월'].dropna().unique().astype(int).tolist()) if '월' in df.columns else ['전체']
             department_options = ['전체'] + sorted(df['부서'].dropna().unique().tolist()) if '부서' in df.columns else ['전체']
-            process_options = ['전체'] + sorted(df['공정'].dropna().unique().tolist()) if '공정' in df.columns else ['전체']
+            process_options = ['전체'] + sorted(df['공정'].dropna().unique().tolist()) if '공정' in df.columns else ['전체'] # '공정'은 없을 가능성 높음
             forklift_class_options = ['전체'] + sorted(df['차대 분류'].dropna().unique().tolist()) if '차대 분류' in df.columns else ['전체']
             workplace_options = ['전체'] + sorted(df['작업 장소'].dropna().unique().tolist()) if '작업 장소' in df.columns else ['전체']
 
             selected_month = st.selectbox('월 선택:', month_options)
             selected_department = st.selectbox('부서 선택:', department_options)
-            selected_process = st.selectbox('공정 선택:', process_options)
+            selected_process = st.selectbox('공정 선택:', process_options, disabled=('공정' not in df.columns)) # 공정 컬럼 없으면 비활성화
             selected_forklift_class = st.selectbox('차대 분류 선택:', forklift_class_options)
             selected_workplace = st.selectbox('작업 장소 선택:', workplace_options)
             graph_height = st.slider('그래프 높이 선택', 300, 1500, 900)
@@ -90,8 +123,12 @@ with st.sidebar:
             st.error("오류: 업로드된 파일이 비어 있습니다.")
             df = None
         except Exception as e:
-            st.error(f"파일 처리 중 오류 발생: {e}")
+            st.error(f"파일 처리 중 예상치 못한 오류 발생: {e}")
             df = None
+
+# --- 이후 로직 (generate_pivot 함수, 시각화 등)은 이전과 동일 ---
+# (generate_pivot 함수 내에서도 컬럼 존재 여부를 확인하는 것이 더 안전하지만,
+# 이미 로딩 단계에서 필수 컬럼을 확인했으므로 여기서는 생략)
 
 # 변수 초기화
 title = "분석 대기 중..."
@@ -101,14 +138,16 @@ index_name = "데이터 선택"
 
 # 메인 페이지 설정
 if df is not None and not df.empty:
+    # generate_pivot 함수 정의 (이전 코드와 동일)
     def generate_pivot(original_df, month, department, process, forklift_class, workplace, analysis_type):
         filtered_df = original_df.copy()
 
         # --- 필터링 ---
-        if month != '전체':
+        if month != '전체' and '월' in filtered_df.columns:
             filtered_df = filtered_df[filtered_df['월'] == month]
         if department != '전체' and '부서' in filtered_df.columns:
             filtered_df = filtered_df[filtered_df['부서'] == department]
+        # '공정' 컬럼이 있을 때만 필터링 적용
         if process != '전체' and '공정' in filtered_df.columns:
             filtered_df = filtered_df[filtered_df['공정'] == process]
         if forklift_class != '전체' and '차대 분류' in filtered_df.columns:
@@ -117,7 +156,7 @@ if df is not None and not df.empty:
             filtered_df = filtered_df[filtered_df['작업 장소'] == workplace]
 
         if filtered_df.empty:
-            st.warning("선택된 조건에 해당하는 데이터가 없습니다.")
+            # st.warning("선택된 조건에 해당하는 데이터가 없습니다.") # 여기서 경고하면 너무 자주 나올 수 있음
             return pd.DataFrame(), "데이터 없음", "데이터 없음", {}
 
         local_summary = {}
@@ -176,13 +215,19 @@ if df is not None and not df.empty:
             max_operating_counts_ratio = (max_operating_counts / total_operating_counts * 100) if total_operating_counts > 0 else 0
             avg_operating_counts_ratio = (avg_operating_counts / total_operating_counts * 100) if total_operating_counts > 0 else 0
 
-            operating_times = filtered_df.groupby('차대 코드')['운영 시간(초)'].sum()
-            min_operating_time = operating_times.min() if not operating_times.empty else 0
-            max_operating_time = operating_times.max() if not operating_times.empty else 0
-            min_time_unit = operating_times.idxmin() if not operating_times.empty else '데이터 없음'
-            max_time_unit = operating_times.idxmax() if not operating_times.empty else '데이터 없음'
-            avg_operating_time = round(operating_times.mean()) if not operating_times.empty else 0
-            total_operating_time = operating_times.sum()
+            # '운영 시간(초)' 컬럼이 있는지 확인하고 계산
+            if '운영 시간(초)' in filtered_df.columns:
+                operating_times = filtered_df.groupby('차대 코드')['운영 시간(초)'].sum()
+                min_operating_time = operating_times.min() if not operating_times.empty else 0
+                max_operating_time = operating_times.max() if not operating_times.empty else 0
+                min_time_unit = operating_times.idxmin() if not operating_times.empty else '데이터 없음'
+                max_time_unit = operating_times.idxmax() if not operating_times.empty else '데이터 없음'
+                avg_operating_time = round(operating_times.mean()) if not operating_times.empty else 0
+                total_operating_time = operating_times.sum()
+            else: # 운영 시간(초) 컬럼이 없는 경우
+                min_operating_time, max_operating_time, avg_operating_time, total_operating_time = 0, 0, 0, 0
+                min_time_unit, max_time_unit = '데이터 없음', '데이터 없음'
+
 
             min_operating_time_ratio = (min_operating_time / total_operating_time * 100) if total_operating_time > 0 else 0
             max_operating_time_ratio = (max_operating_time / total_operating_time * 100) if total_operating_time > 0 else 0
@@ -220,7 +265,7 @@ if df is not None and not df.empty:
     if not pivot_table.empty:
         fig = make_subplots(rows=1, cols=1)
 
-        # <<< 툴팁 텍스트 생성 (마우스 올리면 보임) >>>
+        # 툴팁 텍스트 생성
         if analysis_type == '운영 횟수':
             tooltip_texts = [[f'운영 횟수: {int(val)}회' for val in row] for row in pivot_table.values]
             hover_name = '운영 횟수'
@@ -233,12 +278,10 @@ if df is not None and not df.empty:
             z=pivot_table.values,
             x=pivot_table.columns,
             y=pivot_table.index,
-            # <<< 보라색 계열 색상 스케일 적용 >>>
-            colorscale='Purples', # Plotly 내장 Colorscale 사용
-            # <<< 툴팁(hover) 기능 활성화 >>>
-            hoverinfo='text', # 'text'만 표시하도록 설정
-            text=tooltip_texts, # 위에서 생성한 툴팁 텍스트 리스트 전달
-            name=hover_name, # 범례 등에 표시될 이름 (툴팁에도 영향 줄 수 있음)
+            colorscale='Purples',
+            hoverinfo='text',
+            text=tooltip_texts,
+            name=hover_name,
             zmin=0
         )
         fig.add_trace(heatmap)
@@ -261,11 +304,11 @@ if df is not None and not df.empty:
                         text=[f'{highlight_text_prefix} {int(max_value)}{highlight_text_suffix}'],
                         textposition='top center',
                         textfont=dict(color='red', size=12, family="Arial, sans-serif"),
-                        hoverinfo='none' # 하이라이트 마커는 툴팁 표시 안 함
+                        hoverinfo='none'
                     ))
 
         # 레이아웃 업데이트
-        y_axis_title = '시작 날짜' if index_name == '시작 날짜_표시용' else index_name # Y축 제목 설정
+        y_axis_title = '시작 날짜' if index_name == '시작 날짜_표시용' else index_name
 
         fig.update_layout(
             title={'text': title, 'x': 0.5, 'xanchor': 'center', 'font': {'size': 24, 'family': "Arial Black, sans-serif"}},
@@ -280,11 +323,10 @@ if df is not None and not df.empty:
 
         # Y축 타입 및 정렬 설정
         if analysis_type == '운영 대수':
-             # Y축 인덱스(날짜)를 문자열로 변환 후 정렬하여 순서 유지
              sorted_y_labels = sorted(pivot_table.index.astype(str))
              fig.update_yaxes(type='category', categoryorder='array', categoryarray=sorted_y_labels)
-        else: # 운영 횟수 (차대 코드) - 기본 정렬 사용 또는 필요시 조정
-             fig.update_yaxes(type='category') # 기본 카테고리 축으로 설정
+        else:
+             fig.update_yaxes(type='category')
 
         st.plotly_chart(fig, use_container_width=True)
 
@@ -311,13 +353,18 @@ if df is not None and not df.empty:
                     )
                     st.markdown(summary_text_counts, unsafe_allow_html=True)
                 with col2:
-                    summary_text_time = (
-                        f"<b>⏱️ 운영 시간 요약 (차량별)</b><br><hr>"
-                        f"⏳ <b>전체 운영 시간:</b> {summary.get('total_time', 'N/A')}<br>"
-                        f"📉 <b>최소 운영 차량:</b> {summary.get('min_time_unit', 'N/A')} ({summary.get('min_time', 'N/A')}, 전체의 {summary.get('min_time_ratio', 0):.2f}%)<br>"
-                        f"📈 <b>최대 운영 차량:</b> {summary.get('max_time_unit', 'N/A')} ({summary.get('max_time', 'N/A')}, 전체의 {summary.get('max_time_ratio', 0):.2f}%)<br>"
-                        f"📊 <b>차량 평균 운영 시간:</b> {summary.get('avg_time', 'N/A')} (전체의 {summary.get('avg_time_ratio', 0):.2f}%)"
-                    )
+                    # 운영 시간(초) 컬럼이 있었는지 여부에 따라 다르게 표시
+                    if '운영 시간(초)' in df.columns:
+                        summary_text_time = (
+                            f"<b>⏱️ 운영 시간 요약 (차량별)</b><br><hr>"
+                            f"⏳ <b>전체 운영 시간:</b> {summary.get('total_time', 'N/A')}<br>"
+                            f"📉 <b>최소 운영 차량:</b> {summary.get('min_time_unit', 'N/A')} ({summary.get('min_time', 'N/A')}, 전체의 {summary.get('min_time_ratio', 0):.2f}%)<br>"
+                            f"📈 <b>최대 운영 차량:</b> {summary.get('max_time_unit', 'N/A')} ({summary.get('max_time', 'N/A')}, 전체의 {summary.get('max_time_ratio', 0):.2f}%)<br>"
+                            f"📊 <b>차량 평균 운영 시간:</b> {summary.get('avg_time', 'N/A')} (전체의 {summary.get('avg_time_ratio', 0):.2f}%)"
+                        )
+                    else:
+                        summary_text_time = "<b>⏱️ 운영 시간 요약 (차량별)</b><br><hr>데이터 없음 ('운영 시간(초)' 컬럼 누락)"
+
                     st.markdown(summary_text_time, unsafe_allow_html=True)
         else:
              st.info("요약 정보를 표시할 데이터가 없습니다.")
