@@ -14,58 +14,70 @@ with st.sidebar:
 
     if uploaded_file is not None:
         try:
-            # 인코딩 명시적으로 시도 (예: cp949 또는 utf-8)
+            # <<< 헤더 없이 파일 읽기 및 컬럼명 직접 지정 >>>
             try:
-                df_initial = pd.read_csv(uploaded_file, encoding='cp949')
+                # 헤더가 없다고 명시 (header=None)
+                df_initial = pd.read_csv(uploaded_file, header=None, encoding='cp949')
             except UnicodeDecodeError:
-                df_initial = pd.read_csv(uploaded_file, encoding='utf-8')
+                df_initial = pd.read_csv(uploaded_file, header=None, encoding='utf-8')
 
-            st.success("파일 로딩 성공!")
+            # 예상되는 컬럼 개수 확인
+            expected_columns = 7
+            if df_initial.shape[1] != expected_columns:
+                 st.error(f"오류: 파일의 컬럼 개수({df_initial.shape[1]})가 예상({expected_columns})과 다릅니다. 파일 형식을 확인하세요.")
+                 st.stop()
 
-            # <<< 컬럼명 앞뒤 공백 제거 >>>
-            df_initial.columns = df_initial.columns.str.strip()
-            st.write("Debug: Cleaned column names:", df_initial.columns.tolist()) # 디버깅용: 정리된 컬럼명 확인
+            # 컬럼명 직접 할당 (추정된 순서 기반)
+            df_initial.columns = ['부서', '차대 코드', '작업 장소', '시작 날짜', '운영 시간(초)', '시작 시간', '시간대']
+            st.success("파일 로딩 및 컬럼명 할당 성공!")
+            st.write("Debug: Assigned column names:", df_initial.columns.tolist()) # 할당된 컬럼명 확인
 
-            # --- 필수 컬럼 확인 ---
-            # 실제 파일에 있는 컬럼명 기반으로 확인
+
+            # --- 필수 컬럼 확인 (이제 할당된 이름으로 확인) ---
+            # 이제 이 컬럼명들이 존재해야 함
             required_columns = ['시간대', '시작 날짜', '차대 코드', '운영 시간(초)']
-            optional_columns = ['부서', '공정', '차대 분류', '작업 장소'] # 공정은 없을 수 있음
+            optional_columns = ['부서', '공정', '차대 분류', '작업 장소'] # '공정', '차대 분류'는 여전히 없을 수 있음
 
-            missing_required = [col for col in required_columns if col not in df_initial.columns]
-            missing_optional = [col for col in optional_columns if col not in df_initial.columns]
+            # 할당된 컬럼 리스트
+            assigned_columns = df_initial.columns.tolist()
+
+            missing_required = [col for col in required_columns if col not in assigned_columns]
+            # 실제 파일에 없는 컬럼 (수동 할당 시에도 없을 수 있음, 예: '공정')
+            missing_optional = [col for col in optional_columns if col not in assigned_columns]
+
 
             if missing_required:
-                st.error(f"오류: 필수 컬럼이 누락되었습니다 - {', '.join(missing_required)}. 컬럼명을 확인하세요.")
+                # 이 오류는 이제 발생하면 안 됨 (컬럼명을 직접 할당했으므로)
+                st.error(f"코드 오류: 필수 컬럼 할당 실패 - {', '.join(missing_required)}")
                 st.stop()
             else:
                 df = df_initial.copy()
 
             if missing_optional:
-                st.warning(f"경고: 다음 필터링 컬럼이 누락되었습니다 - {', '.join(missing_optional)}. 해당 필터는 작동하지 않거나 '정보 없음'으로 표시됩니다.")
-                # 누락된 선택적 컬럼을 빈 값 또는 기본값으로 추가
+                st.warning(f"경고: 다음 필터링 컬럼이 파일에 없어 '정보 없음'으로 처리됩니다 - {', '.join(missing_optional)}")
+                # 누락된 선택적 컬럼 추가
                 for col in missing_optional:
-                    if col not in df.columns: # 이미 존재하지 않는 경우에만 추가
+                    if col not in df.columns:
                        df[col] = '정보 없음'
 
 
-            # --- 데이터 타입 변환 ---
+            # --- 데이터 타입 변환 (컬럼명 기준으로 진행) ---
+            # (이후 코드는 컬럼명이 올바르게 할당되었으므로 이전과 거의 동일하게 작동)
             try:
-                # '시간대' 컬럼이 존재하는지 다시 확인 후 변환
                 if '시간대' in df.columns:
                     df['시간대'] = pd.to_datetime(df['시간대'], format='%H:%M', errors='coerce').dt.strftime('%H:%M')
                     df.dropna(subset=['시간대'], inplace=True)
                     if df.empty:
                         st.warning("시간대 변환 후 유효한 데이터가 없습니다.")
                         st.stop()
-                else:
-                    st.error("'시간대' 컬럼이 존재하지 않아 시간 변환을 수행할 수 없습니다.")
+                else: # 컬럼 할당 실패 시
+                    st.error("'시간대' 컬럼 처리 중 문제 발생.")
                     st.stop()
             except Exception as e:
-                st.error(f"'시간대' 컬럼 변환 중 오류 발생: {e}. 컬럼 형식을 확인하세요 (예: HH:MM).")
+                st.error(f"'시간대' 컬럼 변환 중 오류 발생: {e}. 데이터 형식을 확인하세요 (예: HH:MM).")
                 st.stop()
 
             try:
-                # '시작 날짜' 컬럼이 존재하는지 다시 확인 후 변환
                 if '시작 날짜' in df.columns:
                     df['시작 날짜'] = pd.to_datetime(df['시작 날짜'], errors='coerce')
                     df.dropna(subset=['시작 날짜'], inplace=True)
@@ -74,28 +86,22 @@ with st.sidebar:
                         st.stop()
                     df['월'] = df['시작 날짜'].dt.month
                 else:
-                    st.error("'시작 날짜' 컬럼이 존재하지 않아 날짜 변환 및 월 추출을 수행할 수 없습니다.")
+                    st.error("'시작 날짜' 컬럼 처리 중 문제 발생.")
                     st.stop()
             except Exception as e:
                 st.error(f"'시작 날짜' 컬럼 변환 중 오류 발생: {e}. 날짜 형식을 확인하세요.")
                 st.stop()
 
-            # '운영 시간(초)' 컬럼이 존재하는지 다시 확인 후 변환
             if '운영 시간(초)' in df.columns:
+                 # .0 이 붙어 있을 수 있으므로 numeric 변환 중요
                 df['운영 시간(초)'] = pd.to_numeric(df['운영 시간(초)'], errors='coerce').fillna(0).astype(int)
             else:
-                st.error("'운영 시간(초)' 컬럼이 존재하지 않아 숫자 변환을 수행할 수 없습니다.")
-                # 필요하다면 여기서 st.stop() 처리
-                # 다만, 운영 시간 분석이 아닌 경우 일단 진행 가능하게 둘 수도 있음
-                st.warning("'운영 시간(초)' 컬럼이 없어 운영 시간 관련 분석은 제한됩니다.")
-                df['운영 시간(초)'] = 0 # 기본값 0으로 컬럼 생성 또는 다른 처리
+                st.error("'운영 시간(초)' 컬럼 처리 중 문제 발생.")
+                df['운영 시간(초)'] = 0 # 오류 방지용 기본값
 
-            # 12월 데이터 제외 (월 컬럼이 성공적으로 생성되었는지 확인)
             if '월' in df.columns:
                 excluded_month = 12
                 df = df[df['월'] != excluded_month]
-            else:
-                st.warning("'월' 정보를 추출할 수 없어 12월 데이터 제외 로직을 건너<0xEB><0x87>니다.")
 
 
             if df.empty:
@@ -105,17 +111,18 @@ with st.sidebar:
             # --- 드롭다운 메뉴 설정 ---
             analysis_type = st.radio("분석 유형 선택:", ('운영 대수', '운영 횟수'))
 
-            # 각 필터링 컬럼 존재 여부 확인하며 옵션 생성
             month_options = ['전체'] + sorted(df['월'].dropna().unique().astype(int).tolist()) if '월' in df.columns else ['전체']
             department_options = ['전체'] + sorted(df['부서'].dropna().unique().tolist()) if '부서' in df.columns else ['전체']
-            process_options = ['전체'] + sorted(df['공정'].dropna().unique().tolist()) if '공정' in df.columns else ['전체'] # '공정'은 없을 가능성 높음
+            # '공정'은 파일에 없으므로 항상 비활성화됨
+            process_options = ['전체'] + sorted(df['공정'].dropna().unique().tolist()) if '공정' in df.columns else ['전체']
+            # '차대 분류' 컬럼도 할당하지 않았으므로 확인 필요 (현재 '부서'로 할당한 첫번째 컬럼이 실제로는 '차대 분류'일 수도 있음)
             forklift_class_options = ['전체'] + sorted(df['차대 분류'].dropna().unique().tolist()) if '차대 분류' in df.columns else ['전체']
             workplace_options = ['전체'] + sorted(df['작업 장소'].dropna().unique().tolist()) if '작업 장소' in df.columns else ['전체']
 
             selected_month = st.selectbox('월 선택:', month_options)
             selected_department = st.selectbox('부서 선택:', department_options)
-            selected_process = st.selectbox('공정 선택:', process_options, disabled=('공정' not in df.columns)) # 공정 컬럼 없으면 비활성화
-            selected_forklift_class = st.selectbox('차대 분류 선택:', forklift_class_options)
+            selected_process = st.selectbox('공정 선택:', process_options, disabled=('공정' not in df.columns))
+            selected_forklift_class = st.selectbox('차대 분류 선택:', forklift_class_options, disabled=('차대 분류' not in df.columns))
             selected_workplace = st.selectbox('작업 장소 선택:', workplace_options)
             graph_height = st.slider('그래프 높이 선택', 300, 1500, 900)
 
@@ -126,9 +133,9 @@ with st.sidebar:
             st.error(f"파일 처리 중 예상치 못한 오류 발생: {e}")
             df = None
 
-# --- 이후 로직 (generate_pivot 함수, 시각화 등)은 이전과 동일 ---
-# (generate_pivot 함수 내에서도 컬럼 존재 여부를 확인하는 것이 더 안전하지만,
-# 이미 로딩 단계에서 필수 컬럼을 확인했으므로 여기서는 생략)
+
+# --- 이하 generate_pivot, 시각화, 요약 정보 표시는 이전 코드와 동일 ---
+# (컬럼명이 코드 내부에서 사용하는 이름과 일치하게 되었으므로 잘 작동할 것으로 예상)
 
 # 변수 초기화
 title = "분석 대기 중..."
@@ -147,16 +154,16 @@ if df is not None and not df.empty:
             filtered_df = filtered_df[filtered_df['월'] == month]
         if department != '전체' and '부서' in filtered_df.columns:
             filtered_df = filtered_df[filtered_df['부서'] == department]
-        # '공정' 컬럼이 있을 때만 필터링 적용
+        # '공정' 컬럼이 있을 때만 필터링 적용 (파일에 없으므로 항상 실행 안됨)
         if process != '전체' and '공정' in filtered_df.columns:
             filtered_df = filtered_df[filtered_df['공정'] == process]
+        # '차대 분류' 컬럼이 있을 때만 필터링 적용 (현재는 없음)
         if forklift_class != '전체' and '차대 분류' in filtered_df.columns:
             filtered_df = filtered_df[filtered_df['차대 분류'] == forklift_class]
         if workplace != '전체' and '작업 장소' in filtered_df.columns:
             filtered_df = filtered_df[filtered_df['작업 장소'] == workplace]
 
         if filtered_df.empty:
-            # st.warning("선택된 조건에 해당하는 데이터가 없습니다.") # 여기서 경고하면 너무 자주 나올 수 있음
             return pd.DataFrame(), "데이터 없음", "데이터 없음", {}
 
         local_summary = {}
@@ -166,7 +173,6 @@ if df is not None and not df.empty:
 
 
         if analysis_type == '운영 대수':
-            # <<< Y축 날짜 형식 변경 ('MM/DD') >>>
             filtered_df['시작 날짜_표시용'] = filtered_df['시작 날짜'].dt.strftime('%m/%d')
             local_index_name = '시작 날짜_표시용'
             value_name = '차대 코드'
@@ -215,7 +221,6 @@ if df is not None and not df.empty:
             max_operating_counts_ratio = (max_operating_counts / total_operating_counts * 100) if total_operating_counts > 0 else 0
             avg_operating_counts_ratio = (avg_operating_counts / total_operating_counts * 100) if total_operating_counts > 0 else 0
 
-            # '운영 시간(초)' 컬럼이 있는지 확인하고 계산
             if '운영 시간(초)' in filtered_df.columns:
                 operating_times = filtered_df.groupby('차대 코드')['운영 시간(초)'].sum()
                 min_operating_time = operating_times.min() if not operating_times.empty else 0
@@ -224,7 +229,7 @@ if df is not None and not df.empty:
                 max_time_unit = operating_times.idxmax() if not operating_times.empty else '데이터 없음'
                 avg_operating_time = round(operating_times.mean()) if not operating_times.empty else 0
                 total_operating_time = operating_times.sum()
-            else: # 운영 시간(초) 컬럼이 없는 경우
+            else:
                 min_operating_time, max_operating_time, avg_operating_time, total_operating_time = 0, 0, 0, 0
                 min_time_unit, max_time_unit = '데이터 없음', '데이터 없음'
 
@@ -353,7 +358,6 @@ if df is not None and not df.empty:
                     )
                     st.markdown(summary_text_counts, unsafe_allow_html=True)
                 with col2:
-                    # 운영 시간(초) 컬럼이 있었는지 여부에 따라 다르게 표시
                     if '운영 시간(초)' in df.columns:
                         summary_text_time = (
                             f"<b>⏱️ 운영 시간 요약 (차량별)</b><br><hr>"
@@ -364,7 +368,6 @@ if df is not None and not df.empty:
                         )
                     else:
                         summary_text_time = "<b>⏱️ 운영 시간 요약 (차량별)</b><br><hr>데이터 없음 ('운영 시간(초)' 컬럼 누락)"
-
                     st.markdown(summary_text_time, unsafe_allow_html=True)
         else:
              st.info("요약 정보를 표시할 데이터가 없습니다.")
