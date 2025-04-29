@@ -266,16 +266,7 @@ if df is not None and not df.empty:
 
     # --- 시각화 (피벗 테이블이 비어있지 않을 때) ---
     if not pivot_table.empty:
-
-        # ===== 임시 추가: 피벗 테이블 인덱스 확인 =====
-        # '운영 대수' 분석 시, 실제 피벗 테이블 인덱스 값을 출력하여 'MM-DD' 형식인지 확인합니다.
-        if analysis_type == '운영 대수':
-            st.markdown("---") # 구분선
-            st.subheader("🕵️‍♂️ [진단용] 피벗 테이블 인덱스 확인")
-            st.write("아래 값들이 'MM-DD' 형식(예: '01-01')이어야 합니다:")
-            st.dataframe(pivot_table.index) # 데이터프레임 형태로 보여주기
-            st.markdown("---") # 구분선
-        # ==========================================
+        # ===== 진단용 코드 제거됨 =====
 
         fig = make_subplots(rows=1, cols=1)
 
@@ -352,8 +343,7 @@ if df is not None and not df.empty:
             yaxis=dict(
                 title=y_axis_title,
                 fixedrange=True,
-                # Y축 타입 자동 감지 또는 필요시 명시적 설정
-                # type='category' # 카테고리 축으로 설정하면 순서 유지에 도움될 수 있음
+                # Y축 타입은 아래 fig.update_yaxes에서 설정
             ),
             plot_bgcolor='rgba(245, 245, 245, 1)', # 배경색 약간 변경
             paper_bgcolor='white',
@@ -366,12 +356,21 @@ if df is not None and not df.empty:
             )
         )
 
-        # Y축 정렬: '운영 대수'는 날짜순('MM-DD' 문자열 정렬), '운영 횟수'는 차대 코드 이름순
+        # Y축 정렬 및 타입 설정:
         if analysis_type == '운영 대수':
-             # 인덱스('MM-DD')를 문자열로 정렬
-             fig.update_yaxes(categoryorder='array', categoryarray=sorted(pivot_table.index.astype(str)))
+             # <<< 중요 수정: Y축 타입을 'category'로 명시하여 'MM-DD' 문자열 그대로 표시 >>>
+             fig.update_yaxes(
+                 type='category',  # 축 타입을 카테고리로 명시
+                 categoryorder='array', # 정렬 순서는 배열(categoryarray)을 따름
+                 categoryarray=sorted(pivot_table.index.astype(str)) # 'MM-DD' 문자열 오름차순 정렬
+             )
         else: # 운영 횟수 (차대 코드)
-             fig.update_yaxes(categoryorder='array', categoryarray=sorted(pivot_table.index.astype(str))) # 차대 코드 이름순 정렬
+             # 차대 코드도 카테고리로 처리하고 이름순으로 정렬
+             fig.update_yaxes(
+                 type='category',
+                 categoryorder='array',
+                 categoryarray=sorted(pivot_table.index.astype(str))
+             )
 
 
         # Streamlit에 그래프 표시
@@ -403,35 +402,4 @@ if df is not None and not df.empty:
                 with count_cols[2]:
                     st.metric(label=f"최소 운영 ({summary.get('min_counts_unit', 'N/A')})", value=f"{summary.get('min_counts', 'N/A')} 회", delta=f"{summary.get('min_counts_ratio', 0):.1f}%", delta_color="inverse")
                 with count_cols[3]:
-                    st.metric(label=f"최대 운영 ({summary.get('max_counts_unit', 'N/A')})", value=f"{summary.get('max_counts', 'N/A')} 회", delta=f"{summary.get('max_counts_ratio', 0):.1f}%", delta_color="normal")
-
-                st.markdown("---")
-                st.markdown("##### ⏱️ 운영 시간 요약 (차량별)")
-                time_cols = st.columns(4)
-                with time_cols[0]:
-                     st.metric(label="전체 운영 시간", value=f"{summary.get('total_time', 'N/A')}")
-                with time_cols[1]:
-                     st.metric(label="차량 평균 운영 시간", value=f"{summary.get('avg_time', 'N/A')}", delta=f"{summary.get('avg_time_ratio', 0):.1f}%", delta_color="off")
-                with time_cols[2]:
-                     st.metric(label=f"최소 운영 ({summary.get('min_time_unit', 'N/A')})", value=f"{summary.get('min_time', 'N/A')}", delta=f"{summary.get('min_time_ratio', 0):.1f}%", delta_color="inverse")
-                with time_cols[3]:
-                     st.metric(label=f"최대 운영 ({summary.get('max_time_unit', 'N/A')})", value=f"{summary.get('max_time', 'N/A')}", delta=f"{summary.get('max_time_ratio', 0):.1f}%", delta_color="normal")
-
-        else: # summary가 비어있는 경우 (generate_pivot에서 빈 dict 반환 시)
-             st.info("요약 정보를 표시할 데이터가 없습니다.")
-
-    # 피벗 테이블 생성 실패 또는 필터링 결과 데이터 없는 경우
-    elif uploaded_file is not None: # 파일은 업로드되었으나 피벗테이블 생성 불가
-        # generate_pivot 함수 내에서 이미 경고 메시지 표시됨
-        pass # 추가 메시지 불필요
-
-# 파일이 업로드되지 않은 초기 상태
-elif uploaded_file is None:
-    st.info("👈 사이드바에서 CSV 파일을 업로드하고 옵션을 선택하면 분석 결과를 볼 수 있습니다.")
-
-# 그 외 파일 처리 중 오류 발생 시 (df가 None으로 설정됨)
-else:
-    # df 변수가 정의되지 않았거나 None일 때 (초기 로딩/처리 단계 오류)
-    # sidebar에서 이미 오류 메시지가 표시되었을 가능성이 높음
-    if 'df' not in locals() or df is None:
-         st.warning("파일을 처리하는 중 오류가 발생했습니다. 사이드바에서 오류 메시지를 확인하거나 파일을 다시 업로드해주세요.")
+                    st.metric(label=f"최대 운영 ({summary.get('max_counts_unit', 'N/A')})", value=f"{summary.get('max_counts
