@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objs as go
 from plotly.subplots import make_subplots
-import numpy as np # numpy 추가
+import numpy as np
 
 # Streamlit 페이지 설정
 st.set_page_config(page_title='My Streamlit App', layout='wide', initial_sidebar_state='expanded')
@@ -14,58 +14,64 @@ with st.sidebar:
 
     if uploaded_file is not None:
         try:
-            # 파일 로딩 시 인코딩 처리 추가 (선택 사항)
+            # --- 헤더가 있는 CSV 파일 읽기 (표준 방식) ---
+            # 인코딩 시도 (cp949 우선, 실패 시 utf-8)
             try:
-                df_initial = pd.read_csv(uploaded_file, encoding='cp949')
+                # header=0 (기본값) 또는 명시적으로 지정하여 첫 행을 헤더로 읽음
+                df_initial = pd.read_csv(uploaded_file, encoding='cp949', header=0)
             except UnicodeDecodeError:
-                df_initial = pd.read_csv(uploaded_file, encoding='utf-8')
-            # df_initial = pd.read_csv(uploaded_file) # 원래 코드대로 사용해도 무방
+                st.warning("cp949 인코딩 실패, utf-8로 재시도합니다.")
+                df_initial = pd.read_csv(uploaded_file, encoding='utf-8', header=0)
+            except Exception as e:
+                st.error(f"파일 로딩 중 오류 발생: {e}")
+                st.stop()
 
             st.success("파일 로딩 성공!")
 
-            # 컬럼명 공백 제거 (만약을 위해 추가)
+            # --- 컬럼명 공백 제거 ---
+            # 헤더를 읽은 직후 컬럼명 정리
+            original_columns = df_initial.columns.tolist()
             df_initial.columns = df_initial.columns.str.strip()
+            cleaned_columns = df_initial.columns.tolist()
 
-            # --- 필수 컬럼 확인 ---
+            if original_columns != cleaned_columns:
+                st.info("컬럼명 앞뒤 공백이 제거되었습니다.")
+            # st.write("Debug: Cleaned column names:", cleaned_columns) # 디버깅 필요시 주석 해제
+
+            # --- 필수 컬럼 확인 (정리된 컬럼명 기준) ---
             required_columns = ['시간대', '시작 날짜', '차대 코드', '운영 시간(초)']
             optional_columns = ['부서', '공정', '차대 분류', '작업 장소']
+
             missing_required = [col for col in required_columns if col not in df_initial.columns]
             missing_optional = [col for col in optional_columns if col not in df_initial.columns]
 
             if missing_required:
-                st.error(f"오류: 필수 컬럼이 누락되었습니다 - {', '.join(missing_required)}. 파일 헤더를 확인하세요.")
+                st.error(f"오류: 필수 컬럼이 누락되었습니다 - {', '.join(missing_required)}. 파일 헤더를 다시 확인하거나 파일이 올바른지 확인하세요.")
+                st.write("현재 파일에서 읽어온 컬럼명:", df_initial.columns.tolist()) # 실제 읽어온 컬럼명 표시
                 st.stop()
             else:
                 df = df_initial.copy()
 
             if missing_optional:
-                st.warning(f"경고: 다음 필터링 컬럼이 누락되었습니다 - {', '.join(missing_optional)}. 해당 필터는 비활성화되거나 '정보 없음'으로 표시됩니다.")
+                st.warning(f"경고: 다음 필터링 컬럼이 파일에 없습니다 - {', '.join(missing_optional)}. 해당 필터는 비활성화되거나 '정보 없음'으로 표시됩니다.")
                 for col in missing_optional:
-                     if col not in df.columns: # 컬럼이 없을 경우에만 추가
+                    if col not in df.columns:
                         df[col] = '정보 없음'
 
-
             # --- 데이터 타입 변환 ---
+            # (이하 로직은 컬럼명이 올바르다고 가정하고 진행)
             try:
                 df['시간대'] = pd.to_datetime(df['시간대'], format='%H:%M', errors='coerce').dt.strftime('%H:%M')
                 df.dropna(subset=['시간대'], inplace=True)
-                if df.empty:
-                    st.warning("시간대 변환 후 유효한 데이터가 없습니다.")
-                    st.stop()
-            except Exception as e:
-                st.error(f"'시간대' 컬럼 변환 중 오류 발생: {e}. 컬럼 형식을 확인하세요 (예: HH:MM).")
-                st.stop()
+                if df.empty: st.warning("시간대 변환 후 유효 데이터 없음"); st.stop()
+            except Exception as e: st.error(f"'시간대' 변환 오류: {e}"); st.stop()
 
             try:
                 df['시작 날짜'] = pd.to_datetime(df['시작 날짜'], errors='coerce')
                 df.dropna(subset=['시작 날짜'], inplace=True)
-                if df.empty:
-                    st.warning("시작 날짜 변환 후 유효한 데이터가 없습니다.")
-                    st.stop()
+                if df.empty: st.warning("시작 날짜 변환 후 유효 데이터 없음"); st.stop()
                 df['월'] = df['시작 날짜'].dt.month
-            except Exception as e:
-                st.error(f"'시작 날짜' 컬럼 변환 중 오류 발생: {e}. 날짜 형식을 확인하세요.")
-                st.stop()
+            except Exception as e: st.error(f"'시작 날짜' 변환 오류: {e}"); st.stop()
 
             df['운영 시간(초)'] = pd.to_numeric(df['운영 시간(초)'], errors='coerce').fillna(0).astype(int)
 
@@ -74,22 +80,18 @@ with st.sidebar:
                 excluded_month = 12
                 df = df[df['월'] != excluded_month]
 
-            if df.empty:
-                st.warning("데이터 처리 후 분석할 데이터가 없습니다.")
-                st.stop()
+            if df.empty: st.warning("처리 후 분석 데이터 없음"); st.stop()
 
             # --- 드롭다운 메뉴 설정 ---
             analysis_type = st.radio("분석 유형 선택:", ('운영 대수', '운영 횟수'))
 
             month_options = ['전체'] + sorted(df['월'].dropna().unique().astype(int).tolist()) if '월' in df.columns else ['전체']
-            # 컬럼 존재 여부 확인하여 옵션 생성 및 비활성화 처리
             department_options = ['전체'] + sorted(df['부서'].dropna().unique().tolist()) if '부서' in df.columns else ['전체']
             process_options = ['전체'] + sorted(df['공정'].dropna().unique().tolist()) if '공정' in df.columns else ['전체']
             forklift_class_options = ['전체'] + sorted(df['차대 분류'].dropna().unique().tolist()) if '차대 분류' in df.columns else ['전체']
             workplace_options = ['전체'] + sorted(df['작업 장소'].dropna().unique().tolist()) if '작업 장소' in df.columns else ['전체']
 
             selected_month = st.selectbox('월 선택:', month_options)
-            # 컬럼이 없으면 selectbox 비활성화
             selected_department = st.selectbox('부서 선택:', department_options, disabled=('부서' not in df.columns))
             selected_process = st.selectbox('공정 선택:', process_options, disabled=('공정' not in df.columns))
             selected_forklift_class = st.selectbox('차대 분류 선택:', forklift_class_options, disabled=('차대 분류' not in df.columns))
@@ -99,10 +101,13 @@ with st.sidebar:
         except pd.errors.EmptyDataError:
             st.error("오류: 업로드된 파일이 비어 있습니다.")
             df = None
+        # 파일 로딩 외 예상치 못한 오류 처리
         except Exception as e:
-            st.error(f"파일 처리 중 오류 발생: {e}")
+            st.error(f"데이터 처리 중 예상치 못한 오류 발생: {e}")
             df = None
 
+
+# --- 이하 generate_pivot, 시각화, 요약 정보 표시는 이전 코드와 동일 ---
 # 변수 초기화
 title = "분석 대기 중..."
 pivot_table = pd.DataFrame()
@@ -111,10 +116,11 @@ index_name = "데이터 선택"
 
 # 메인 페이지 설정
 if df is not None and not df.empty:
+    # generate_pivot 함수 정의 (이전 코드와 동일)
     def generate_pivot(original_df, month, department, process, forklift_class, workplace, analysis_type):
         filtered_df = original_df.copy()
 
-        # --- 필터링 ---
+        # --- 필터링 (컬럼 존재 여부 확인하며 필터링) ---
         if month != '전체' and '월' in filtered_df.columns:
             filtered_df = filtered_df[filtered_df['월'] == month]
         if department != '전체' and '부서' in filtered_df.columns:
@@ -127,25 +133,25 @@ if df is not None and not df.empty:
             filtered_df = filtered_df[filtered_df['작업 장소'] == workplace]
 
         if filtered_df.empty:
-            # st.warning("선택된 조건에 해당하는 데이터가 없습니다.") # 여기서 경고 시 너무 자주 표시될 수 있음
             return pd.DataFrame(), "데이터 없음", "데이터 없음", {}
 
         local_summary = {}
         pivot_table_result = pd.DataFrame()
-        # index_name, title은 분석 유형에 따라 아래에서 설정됨
         local_index_name = "데이터 없음"
         local_title = "데이터 없음"
 
+
         if analysis_type == '운영 대수':
-            # <<< Y축 날짜 형식 'MM/DD'로 변경 >>>
+            # Y축 날짜 형식 'MM/DD' 사용
             filtered_df['시작 날짜_표시용'] = filtered_df['시작 날짜'].dt.strftime('%m/%d')
-            local_index_name = '시작 날짜_표시용' # 피벗 인덱스용 컬럼
+            local_index_name = '시작 날짜_표시용'
             value_name = '차대 코드'
             agg_func = 'nunique'
             local_title = '지게차 일자별 운영 대수'
 
             pivot_table_result = filtered_df.pivot_table(index=local_index_name, columns='시간대', values=value_name, aggfunc=agg_func).fillna(0)
 
+            # 요약 정보 계산
             total_operating_units = filtered_df[value_name].nunique()
             daily_counts = filtered_df.groupby('시작 날짜_표시용')[value_name].nunique()
 
@@ -242,17 +248,16 @@ if df is not None and not df.empty:
             tooltip_texts = [[f'운영 대수: {int(val)}대' for val in row] for row in pivot_table.values]
             hover_name = '운영 대수'
 
-        # 히트맵 생성
+        # 히트맵 생성 (보라색, 툴팁 포함)
         heatmap = go.Heatmap(
             z=pivot_table.values,
             x=pivot_table.columns,
             y=pivot_table.index,
-            # <<< 보라색 계열 색상 스케일 적용 >>>
-            colorscale='Purples',
+            colorscale='Purples', # 보라색 스케일
             hoverinfo='text',
             text=tooltip_texts,
             name=hover_name, # 툴팁 헤더 등에 사용될 수 있음
-            zmin=0,
+            zmin=0
         )
         fig.add_trace(heatmap)
 
@@ -278,30 +283,25 @@ if df is not None and not df.empty:
                     ))
 
         # 레이아웃 업데이트
-        # Y축 제목 설정 (index_name이 '시작 날짜_표시용'일 경우 '시작 날짜'로 표시)
         y_axis_title = '시작 날짜' if index_name == '시작 날짜_표시용' else index_name
 
         fig.update_layout(
             title={'text': title, 'x': 0.5, 'xanchor': 'center', 'font': {'size': 24, 'family': "Arial Black, sans-serif"}},
             xaxis=dict(title='시간대', fixedrange=True, tickangle=0),
-            # Y축 제목 적용
             yaxis=dict(title=y_axis_title, fixedrange=True),
             plot_bgcolor='white',
             paper_bgcolor='white',
             margin=dict(l=100, r=50, t=100, b=80),
             height=graph_height,
-            # xaxis_tickformat = '%H:%M', # 필요시 활성화
             coloraxis_colorbar=dict(title='값의 크기', len=0.8, yanchor='middle', y=0.5)
         )
 
         # Y축 타입 및 정렬 설정
         if analysis_type == '운영 대수':
-             # Y축 인덱스(날짜 'MM/DD')를 문자열로 변환 후 정렬하여 순서 유지
              sorted_y_labels = sorted(pivot_table.index.astype(str))
              fig.update_yaxes(type='category', categoryorder='array', categoryarray=sorted_y_labels)
-        else: # 운영 횟수 (차대 코드)
-             fig.update_yaxes(type='category') # 기본 카테고리 축으로 설정
-
+        else:
+             fig.update_yaxes(type='category')
 
         st.plotly_chart(fig, use_container_width=True)
 
@@ -328,7 +328,6 @@ if df is not None and not df.empty:
                     )
                     st.markdown(summary_text_counts, unsafe_allow_html=True)
                 with col2:
-                    # '운영 시간(초)' 컬럼 존재 여부에 따라 요약 정보 표시
                     if '운영 시간(초)' in df.columns:
                          summary_text_time = (
                             f"<b>⏱️ 운영 시간 요약 (차량별)</b><br><hr>"
@@ -339,15 +338,12 @@ if df is not None and not df.empty:
                         )
                     else:
                          summary_text_time = "<b>⏱️ 운영 시간 요약 (차량별)</b><br><hr>데이터 없음 ('운영 시간(초)' 컬럼 누락)"
-
                     st.markdown(summary_text_time, unsafe_allow_html=True)
-        else: # summary가 비어있는 경우 (generate_pivot에서 빈 dict 반환)
+        else:
              st.info("요약 정보를 표시할 데이터가 없습니다.")
 
     elif uploaded_file is not None and df is not None and df.empty:
          st.warning("파일 로딩 및 전처리 후 분석 가능한 데이터가 없습니다. 필터 조건을 확인하거나 원본 데이터를 확인해주세요.")
 
-
-# 파일 업로드되지 않았을 때 초기 메시지
 if uploaded_file is None:
     st.info("사이드바에서 CSV 파일을 업로드하면 분석 결과를 볼 수 있습니다.")
