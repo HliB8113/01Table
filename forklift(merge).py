@@ -140,7 +140,8 @@ def generate_pivot(original_df, month, department, process, forklift_class, work
         try:
             pivot_table_result = filtered_df.pivot_table(index=index_name, columns='시간대', values=value_name, aggfunc=agg_func).fillna(0)
             # 시간대(컬럼) 정렬
-            pivot_table_result = pivot_table_result.sort_index(axis=1)
+            if not pivot_table_result.empty: # 데이터가 있을 때만 정렬
+                 pivot_table_result = pivot_table_result.sort_index(axis=1)
         except Exception as e:
              st.error(f"❌ '운영 대수' 피벗 테이블 생성 오류: {e}")
              return pd.DataFrame(), title, index_name, {}
@@ -185,7 +186,8 @@ def generate_pivot(original_df, month, department, process, forklift_class, work
         try:
             pivot_table_result = filtered_df.pivot_table(index=index_name, columns='시간대', values=value_name, aggfunc=agg_func).fillna(0)
              # 시간대(컬럼) 정렬
-            pivot_table_result = pivot_table_result.sort_index(axis=1)
+            if not pivot_table_result.empty: # 데이터가 있을 때만 정렬
+                 pivot_table_result = pivot_table_result.sort_index(axis=1)
         except Exception as e:
             st.error(f"❌ '운영 횟수' 피벗 테이블 생성 오류: {e}")
             return pd.DataFrame(), title, index_name, {}
@@ -264,10 +266,29 @@ if df is not None and not df.empty:
         df, selected_month, selected_department, selected_process, selected_forklift_class, selected_workplace, analysis_type
     )
 
-    # --- 시각화 (피벗 테이블이 비어있지 않을 때) ---
+    # --- 시각화 및 하이라이트 선택 (피벗 테이블이 비어있지 않을 때) ---
     if not pivot_table.empty:
-        # ===== 진단용 코드 제거됨 =====
+        y_axis_title = '시작 날짜' if index_name == '시작 날짜_표시용' else index_name # Y축 제목 결정
 
+        # --- 하이라이트 지점 선택 UI (그래프 생성 전에 위치) ---
+        st.markdown("---") # 구분선
+        st.subheader("📍 특정 지점 하이라이트")
+        col1, col2 = st.columns(2) # 두 컬럼으로 나눠서 배치
+
+        # Y축 값 선택 (피벗 테이블의 인덱스 사용)
+        with col1:
+            # 인덱스 값들을 리스트로 변환하여 옵션 생성
+            y_options = ['선택 안 함'] + pivot_table.index.astype(str).tolist()
+            selected_y = st.selectbox(f"{y_axis_title} 선택:", y_options, key='highlight_y_select')
+
+        # X축 값 선택 (피벗 테이블의 컬럼 사용)
+        with col2:
+            # 컬럼 값(시간대)들을 리스트로 변환하여 옵션 생성
+            x_options = ['선택 안 함'] + pivot_table.columns.astype(str).tolist()
+            selected_x = st.selectbox("시간대 선택:", x_options, key='highlight_x_select')
+        st.markdown("---") # 구분선
+
+        # --- 그래프 생성 ---
         fig = make_subplots(rows=1, cols=1)
 
         # 툴팁 텍스트 생성
@@ -291,41 +312,68 @@ if df is not None and not df.empty:
 
         # 최댓값 하이라이트 추가
         if pivot_table.values.size > 0:
-            # NaN 값을 무시하고 최대값 찾기
             try:
-                # 데이터 타입이 object일 경우 numeric으로 변환 시도
                 numeric_values = pd.to_numeric(pivot_table.values.flatten(), errors='coerce')
-                valid_values = numeric_values[~np.isnan(numeric_values)] # NaN 제외
+                valid_values = numeric_values[~np.isnan(numeric_values)]
                 if valid_values.size > 0:
                     max_value = valid_values.max()
-                    if max_value > 0: # 최대값이 0보다 클 때만 하이라이트
-                        # pivot_table.values에서 max_value 위치 찾기 (NaN 안전 처리)
+                    if max_value > 0:
                         max_indices = np.where(np.isclose(pd.to_numeric(pivot_table.values, errors='coerce'), max_value))
-
-                        if len(max_indices[0]) > 0: # 최대값 위치를 찾았을 경우
+                        if len(max_indices[0]) > 0:
                             max_y_indices, max_x_indices = max_indices[0], max_indices[1]
-
                             highlight_text_prefix = "동시 투입 대수(최대):" if analysis_type == "운영 대수" else "동시간대 운영(최대):"
                             highlight_text_suffix = "대" if analysis_type == "운영 대수" else "회"
-
                             for y_idx, x_idx in zip(max_y_indices, max_x_indices):
                                 fig.add_trace(go.Scatter(
                                     x=[pivot_table.columns[x_idx]],
-                                    y=[pivot_table.index[y_idx]], # y 인덱스는 이미 'MM-DD' 또는 '차대 코드' 형식
+                                    y=[pivot_table.index[y_idx]],
                                     mode='markers+text',
                                     marker=dict(size=12, color='red', symbol='circle-open', line=dict(width=3)),
-                                    text=[f'<b>{highlight_text_prefix} {int(max_value)}{highlight_text_suffix}</b>'], # 볼드 처리
-                                    textposition='top right', # 위치 조정
+                                    text=[f'<b>{highlight_text_prefix} {int(max_value)}{highlight_text_suffix}</b>'],
+                                    textposition='top right',
                                     textfont=dict(color='red', size=12, family="Arial, sans-serif"),
                                     hoverinfo='none'
                                 ))
             except Exception as e:
                  st.warning(f"⚠️ 최대값 하이라이트 중 오류 발생: {e}")
 
+        # --- 선택 지점 하이라이트 추가 ---
+        if selected_y != '선택 안 함' and selected_x != '선택 안 함':
+            try:
+                # 선택된 값으로 피벗 테이블에서 정확한 위치(인덱스 번호) 찾기
+                # .get_indexer_for 사용 시 리스트 형태로 반환되므로 [0]으로 인덱스 추출
+                y_idx_list = pivot_table.index.get_indexer_for([selected_y])
+                x_idx_list = pivot_table.columns.get_indexer_for([selected_x])
+
+                # get_indexer_for는 찾지 못하면 -1을 포함하는 리스트 반환
+                if y_idx_list[0] != -1 and x_idx_list[0] != -1:
+                    y_idx = y_idx_list[0]
+                    x_idx = x_idx_list[0]
+                    value_at_point = pivot_table.iloc[y_idx, x_idx] # 해당 위치의 값 가져오기
+                    highlight_suffix = "대" if analysis_type == "운영 대수" else "회"
+                    # 하이라이트 텍스트 생성 (좌표와 값 포함)
+                    highlight_text = f'<b>선택 지점</b><br>{selected_y}, {selected_x}<br>값: {int(value_at_point)}{highlight_suffix}'
+
+                    # 선택된 지점에 초록색 X 마커와 텍스트 추가
+                    fig.add_trace(go.Scatter(
+                        x=[selected_x], # 선택된 X축 값
+                        y=[selected_y], # 선택된 Y축 값
+                        mode='markers+text', # 마커와 텍스트 함께 표시
+                        marker=dict(size=13, color='limegreen', symbol='x-open', line=dict(width=3)), # 마커 스타일 (초록색 X)
+                        text=[highlight_text], # 표시할 텍스트
+                        textposition='bottom center', # 텍스트 위치 (마커 아래 중앙)
+                        textfont=dict(color='green', size=12), # 텍스트 폰트
+                        hoverinfo='none' # 이 마커에는 호버 정보 표시 안 함
+                    ))
+                else:
+                    # 만약 selectbox의 값이 테이블 인덱스/컬럼에 없다면 경고 (정상적인 경우 발생 안 함)
+                    st.warning("선택한 값을 피벗 테이블에서 찾을 수 없습니다.")
+
+            except Exception as e:
+                st.error(f"❌ 하이라이트 지점 처리 중 오류 발생: {e}")
+
 
         # 레이아웃 업데이트
-        y_axis_title = '시작 날짜' if index_name == '시작 날짜_표시용' else index_name # Y축 제목 설정 ('운영 대수'시 '시작 날짜'로 표시)
-
         fig.update_layout(
             title={
                 'text': title,
@@ -352,20 +400,17 @@ if df is not None and not df.empty:
             hovermode='closest', # 가까운 데이터 포인트 정보 표시
             coloraxis_colorbar=dict( # 컬러바 설정 통합
                 title='운영 대수' if analysis_type == '운영 대수' else '운영 횟수',
-                # len=0.8, yanchor='middle', y=0.5 # 필요시 위치/크기 조정
             )
         )
 
         # Y축 정렬 및 타입 설정:
         if analysis_type == '운영 대수':
-             # <<< 중요 수정: Y축 타입을 'category'로 명시하여 'MM-DD' 문자열 그대로 표시 >>>
              fig.update_yaxes(
                  type='category',  # 축 타입을 카테고리로 명시
                  categoryorder='array', # 정렬 순서는 배열(categoryarray)을 따름
                  categoryarray=sorted(pivot_table.index.astype(str)) # 'MM-DD' 문자열 오름차순 정렬
              )
         else: # 운영 횟수 (차대 코드)
-             # 차대 코드도 카테고리로 처리하고 이름순으로 정렬
              fig.update_yaxes(
                  type='category',
                  categoryorder='array',
