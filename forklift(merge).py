@@ -26,7 +26,6 @@ with st.sidebar:
     if uploaded_file is not None:
         try:
             df_initial = pd.read_csv(uploaded_file)
-            # st.success("✔️ 파일 로딩 성공!") # 메시지 제거
 
             # --- 필수 컬럼 확인 ---
             required_columns = ['시간대', '시작 날짜', '차대 코드', '운영 시간(초)']
@@ -35,13 +34,11 @@ with st.sidebar:
             missing_optional = [col for col in optional_columns if col not in df_initial.columns]
 
             if missing_required:
-                # st.error(f"❌ 오류: 필수 컬럼 누락 - {', '.join(missing_required)}. 분석 불가.") # 메시지 제거
                 st.stop() # 필수 컬럼 없으면 실행 중지
             else:
                 df = df_initial.copy()
 
             if missing_optional:
-                # st.warning(f"⚠️ 경고: 필터링 컬럼 누락 - {', '.join(missing_optional)}. 해당 필터는 작동하지 않거나 제한됩니다.") # 메시지 제거
                 for col in missing_optional:
                     df[col] = '정보 없음'
 
@@ -49,37 +46,27 @@ with st.sidebar:
             try:
                 df['시간대'] = pd.to_datetime(df['시간대'], format='%H:%M', errors='coerce').dt.strftime('%H:%M')
                 df.dropna(subset=['시간대'], inplace=True)
-                if df.empty:
-                    # st.warning("⚠️ 시간대 변환 후 유효한 데이터가 없습니다.") # 메시지 제거
-                    st.stop() # 데이터 없으면 중지
+                if df.empty: st.stop()
             except Exception:
-                # st.error(f"❌ '시간대' 컬럼 변환 오류: {e}. 형식을 확인하세요 (예: HH:MM).") # 메시지 제거
-                st.stop() # 변환 실패 시 중지
+                st.stop()
 
             try:
                 df['시작 날짜'] = pd.to_datetime(df['시작 날짜'], errors='coerce')
                 df.dropna(subset=['시작 날짜'], inplace=True)
-                if df.empty:
-                    # st.warning("⚠️ 시작 날짜 변환 후 유효한 데이터가 없습니다.") # 메시지 제거
-                    st.stop() # 데이터 없으면 중지
+                if df.empty: st.stop()
                 df['월'] = df['시작 날짜'].dt.month
             except Exception:
-                # st.error(f"❌ '시작 날짜' 컬럼 변환 오류: {e}. 날짜 형식을 확인하세요.") # 메시지 제거
-                st.stop() # 변환 실패 시 중지
+                st.stop()
 
             try:
                 df['운영 시간(초)'] = pd.to_numeric(df['운영 시간(초)'], errors='coerce').fillna(0).astype(int)
             except Exception:
-                 # 숫자 변환 실패 시 0으로 채우므로 일단 계속 진행 가능. 메시지만 제거.
                  pass
-
 
             # --- 데이터 필터링 (12월 제외) ---
             excluded_month = 12
             df = df[df['월'] != excluded_month]
-            if df.empty:
-                # st.warning(f"⚠️ {excluded_month}월 제외 후 분석할 데이터가 없습니다.") # 메시지 제거
-                st.stop() # 데이터 없으면 중지
+            if df.empty: st.stop()
 
             # --- 사이드바 필터 옵션 설정 ---
             st.header("📊 분석 옵션")
@@ -101,34 +88,23 @@ with st.sidebar:
             graph_height = st.slider('그래프 높이 조절', min_value=300, max_value=1500, value=900, step=50, key='height_slider')
 
         except (pd.errors.EmptyDataError, FileNotFoundError):
-            # st.error(...) # 파일 관련 오류 메시지 제거
-            df = None # df를 None으로 설정하여 이후 로직 실행 방지
+            df = None
         except Exception:
-            # st.error(f"❌ 파일 처리 중 예상치 못한 오류 발생: {e}") # 기타 파일 처리 오류 메시지 제거
             df = None
 
 # --- 함수 정의: 피벗 테이블 및 요약 정보 생성 ---
 def generate_pivot(original_df, month, department, process, forklift_class, workplace, analysis_type):
     filtered_df = original_df.copy()
 
-    # --- 필터링 적용 ---
-    if month != '전체':
-        filtered_df = filtered_df[filtered_df['월'] == month]
-    if department != '전체' and '부서' in filtered_df.columns and department != '정보 없음':
-        filtered_df = filtered_df[filtered_df['부서'] == department]
-    if process != '전체' and '공정' in filtered_df.columns and process != '정보 없음':
-        filtered_df = filtered_df[filtered_df['공정'] == process]
-    if forklift_class != '전체' and '차대 분류' in filtered_df.columns and forklift_class != '정보 없음':
-        filtered_df = filtered_df[filtered_df['차대 분류'] == forklift_class]
-    if workplace != '전체' and '작업 장소' in filtered_df.columns and workplace != '정보 없음':
-        filtered_df = filtered_df[filtered_df['작업 장소'] == workplace]
+    # 필터링
+    if month != '전체': filtered_df = filtered_df[filtered_df['월'] == month]
+    if department != '전체' and '부서' in filtered_df.columns and department != '정보 없음': filtered_df = filtered_df[filtered_df['부서'] == department]
+    if process != '전체' and '공정' in filtered_df.columns and process != '정보 없음': filtered_df = filtered_df[filtered_df['공정'] == process]
+    if forklift_class != '전체' and '차대 분류' in filtered_df.columns and forklift_class != '정보 없음': filtered_df = filtered_df[filtered_df['차대 분류'] == forklift_class]
+    if workplace != '전체' and '작업 장소' in filtered_df.columns and workplace != '정보 없음': filtered_df = filtered_df[filtered_df['작업 장소'] == workplace]
 
-    # --- 필터링 후 데이터 유무 확인 ---
-    if filtered_df.empty:
-        # st.warning("⚠️ 선택된 조건에 해당하는 데이터가 없습니다.") # 메시지 제거
-        return {}, "데이터 없음", "데이터 없음", {}
+    if filtered_df.empty: return {}, "데이터 없음", "데이터 없음", {}
 
-    # --- 분석 유형별 처리 ---
     local_summary = {}
     pivot_data = {}
     title = "분석 결과"
@@ -140,19 +116,12 @@ def generate_pivot(original_df, month, department, process, forklift_class, work
         value_name = '차대 코드'
         agg_func = 'nunique'
         title = f'지게차 일자별 운영 대수 ({selected_month}월)' if selected_month != '전체' else '지게차 일자별 운영 대수 (전체 월)'
-
         try:
             pivot_table_result = filtered_df.pivot_table(index=index_name, columns='시간대', values=value_name, aggfunc=agg_func).fillna(0)
-            if not pivot_table_result.empty:
-                 pivot_table_result = pivot_table_result.sort_index(axis=1)
+            if not pivot_table_result.empty: pivot_table_result = pivot_table_result.sort_index(axis=1)
             pivot_data['units'] = pivot_table_result
-        except Exception:
-             # st.error(f"❌ '운영 대수' 피벗 테이블 생성 오류: {e}") # 메시지 제거
-             return {}, title, index_name, {} # 오류 시 빈 값 반환
-
-        # 요약 정보 계산 (기존과 동일, 오류 발생 가능성 낮음)
+        except Exception: return {}, title, index_name, {}
         if not pivot_table_result.empty:
-            # ... (요약 정보 계산 로직은 그대로 유지) ...
             total_operating_units = filtered_df[value_name].nunique()
             daily_counts = filtered_df.groupby('시작 날짜_표시용')[value_name].nunique()
             min_operating_units = daily_counts.min() if not daily_counts.empty else 0
@@ -163,38 +132,22 @@ def generate_pivot(original_df, month, department, process, forklift_class, work
             min_units_ratio = (min_operating_units / total_operating_units * 100) if total_operating_units > 0 else 0
             max_units_ratio = (max_operating_units / total_operating_units * 100) if total_operating_units > 0 else 0
             avg_units_ratio = (avg_operating_units / total_operating_units * 100) if total_operating_units > 0 else 0
-            local_summary = {
-                'total_units': total_operating_units, 'min_units': min_operating_units,
-                'min_units_day': min_operating_day, 'min_units_ratio': min_units_ratio,
-                'max_units': max_operating_units, 'max_units_day': max_operating_day,
-                'max_units_ratio': max_units_ratio, 'avg_units': avg_operating_units,
-                'avg_units_ratio': avg_units_ratio,
-            }
-
-
+            local_summary = {'total_units': total_operating_units, 'min_units': min_operating_units, 'min_units_day': min_operating_day, 'min_units_ratio': min_units_ratio, 'max_units': max_operating_units, 'max_units_day': max_operating_day, 'max_units_ratio': max_units_ratio, 'avg_units': avg_operating_units, 'avg_units_ratio': avg_units_ratio}
     elif analysis_type == '운영 횟수':
         index_name = '차대 코드'
         title = f'지게차 시간대별 운영 횟수 ({selected_month}월)' if selected_month != '전체' else '지게차 시간대별 운영 횟수 (전체 월)'
         pivot_table_counts = pd.DataFrame()
         pivot_table_times = pd.DataFrame()
-
         try:
             pivot_table_counts = filtered_df.pivot_table(index=index_name, columns='시간대', values='시작 날짜', aggfunc='count').fillna(0)
             pivot_table_times = filtered_df.pivot_table(index=index_name, columns='시간대', values='운영 시간(초)', aggfunc='sum').fillna(0)
-
             if not pivot_table_counts.empty:
                 pivot_table_counts = pivot_table_counts.sort_index(axis=1)
                 pivot_table_times = pivot_table_times.reindex(index=pivot_table_counts.index, columns=pivot_table_counts.columns).fillna(0)
-
             pivot_data['counts'] = pivot_table_counts
             pivot_data['times'] = pivot_table_times
-        except Exception:
-            # st.error(f"❌ '운영 횟수' 피벗 테이블 생성 오류: {e}") # 메시지 제거
-            return {}, title, index_name, {} # 오류 시 빈 값 반환
-
-        # 요약 정보 계산 (기존과 동일, 오류 발생 가능성 낮음)
+        except Exception: return {}, title, index_name, {}
         if not pivot_table_counts.empty:
-            # ... (요약 정보 계산 로직은 그대로 유지) ...
              unit_counts = filtered_df.groupby('차대 코드')['시작 날짜'].count()
              total_operating_counts = unit_counts.sum()
              min_operating_counts = unit_counts.min() if not unit_counts.empty else 0
@@ -205,7 +158,6 @@ def generate_pivot(original_df, month, department, process, forklift_class, work
              min_counts_ratio = (min_operating_counts / total_operating_counts * 100) if total_operating_counts > 0 else 0
              max_counts_ratio = (max_operating_counts / total_operating_counts * 100) if total_operating_counts > 0 else 0
              avg_counts_ratio = (avg_operating_counts / total_operating_counts * 100) if total_operating_counts > 0 else 0
-
              operating_times = filtered_df.groupby('차대 코드')['운영 시간(초)'].sum()
              total_operating_time = operating_times.sum()
              min_operating_time = operating_times.min() if not operating_times.empty else 0
@@ -216,25 +168,14 @@ def generate_pivot(original_df, month, department, process, forklift_class, work
              min_time_ratio = (min_operating_time / total_operating_time * 100) if total_operating_time > 0 else 0
              max_time_ratio = (max_operating_time / total_operating_time * 100) if total_operating_time > 0 else 0
              avg_time_ratio = (avg_operating_time / total_operating_time * 100) if total_operating_time > 0 else 0
-
-             local_summary = {
-                 'total_counts': total_operating_counts, 'min_counts': min_operating_counts,
-                 'min_counts_unit': min_operating_unit, 'min_counts_ratio': min_counts_ratio,
-                 'max_counts': max_operating_counts, 'max_counts_unit': max_operating_unit,
-                 'max_counts_ratio': max_counts_ratio, 'avg_counts': avg_operating_counts,
-                 'avg_counts_ratio': avg_counts_ratio, 'total_time': format_time(total_operating_time),
-                 'min_time': format_time(min_operating_time), 'min_time_unit': min_time_unit,
-                 'min_time_ratio': min_time_ratio, 'max_time': format_time(max_operating_time),
-                 'max_time_unit': max_time_unit, 'max_time_ratio': max_time_ratio,
-                 'avg_time': format_time(avg_operating_time), 'avg_time_ratio': avg_time_ratio,
-             }
+             local_summary = {'total_counts': total_operating_counts, 'min_counts': min_operating_counts, 'min_counts_unit': min_operating_unit, 'min_counts_ratio': min_counts_ratio, 'max_counts': max_operating_counts, 'max_counts_unit': max_operating_unit, 'max_counts_ratio': max_counts_ratio, 'avg_counts': avg_operating_counts, 'avg_counts_ratio': avg_counts_ratio, 'total_time': format_time(total_operating_time), 'min_time': format_time(min_operating_time), 'min_time_unit': min_time_unit, 'min_time_ratio': min_time_ratio, 'max_time': format_time(max_operating_time), 'max_time_unit': max_time_unit, 'max_time_ratio': max_time_ratio, 'avg_time': format_time(avg_operating_time), 'avg_time_ratio': avg_time_ratio}
 
     return pivot_data, title, index_name, local_summary
 
 # --- 메인 페이지 ---
 st.title("🚚 지게차 운영 현황 대시보드")
 
-if df is not None: # df가 None이 아닌 경우에만 진행
+if df is not None:
     pivot_data, title, index_name, summary = generate_pivot(
         df, selected_month, selected_department, selected_process, selected_forklift_class, selected_workplace, analysis_type
     )
@@ -243,23 +184,19 @@ if df is not None: # df가 None이 아닌 경우에만 진행
     if pivot_data:
         pivot_table = None
         pivot_table_times = None
-
-        if analysis_type == '운영 대수':
-            pivot_table = pivot_data.get('units')
+        if analysis_type == '운영 대수': pivot_table = pivot_data.get('units')
         elif analysis_type == '운영 횟수':
             pivot_table = pivot_data.get('counts')
             pivot_table_times = pivot_data.get('times')
 
         if pivot_table is not None and not pivot_table.empty:
             y_axis_title = '시작 날짜' if index_name == '시작 날짜_표시용' else index_name
-
             fig = make_subplots(rows=1, cols=1)
 
-            # --- 툴팁 텍스트 생성 ---
+            # 툴팁 텍스트 생성
             tooltip_texts = []
             value_prefix = "운영 횟수" if analysis_type == '운영 횟수' else "운영 대수"
             value_suffix = "회" if analysis_type == '운영 횟수' else "대"
-
             for r in range(len(pivot_table.index)):
                 y_label = pivot_table.index[r]
                 row_tooltips = []
@@ -267,30 +204,27 @@ if df is not None: # df가 None이 아닌 경우에만 진행
                     x_label = pivot_table.columns[c]
                     value = pivot_table.iloc[r, c]
                     cell_tooltip = f"{y_label}, {x_label}<br>{value_prefix}: {int(value)}{value_suffix}"
-
                     if analysis_type == '운영 횟수' and pivot_table_times is not None:
                         try:
                             time_value = pivot_table_times.iloc[r, c]
                             formatted_time = format_time(time_value)
                             cell_tooltip += f"<br>사용 시간: {formatted_time}"
-                        except (IndexError, Exception): # 오류 발생 시 조용히 넘어가거나 기본값 표시
-                             cell_tooltip += "<br>사용 시간: (오류)"
-                             # pass # 또는 그냥 추가 안 함
-
+                        except (IndexError, Exception): cell_tooltip += "<br>사용 시간: (오류)"
                     row_tooltips.append(cell_tooltip)
                 tooltip_texts.append(row_tooltips)
 
-            # 히트맵 생성
+            # <<< 히트맵 색상 스케일 변경 지점 >>>
             heatmap = go.Heatmap(
                 z=pivot_table.values, x=pivot_table.columns, y=pivot_table.index,
-                colorscale='Purples', hoverinfo='text', text=tooltip_texts, zmin=0,
+                colorscale=[[0, 'rgb(255,255,255)'], [0.01, 'rgb(240, 230, 247)'], [1, '#5f0080']], # 흰색-연보라-진보라(#5f0080)
+                hoverinfo='text', text=tooltip_texts, zmin=0,
                 colorbar=dict(title='값' if analysis_type == '운영 대수' else '횟수')
             )
             fig.add_trace(heatmap)
 
-            # 최댓값 하이라이트 추가
+            # <<< 최댓값 하이라이트 색상 변경 지점 >>>
             if pivot_table.values.size > 0:
-                try: # 최대값 관련 계산/표시는 오류 발생 시 그냥 넘어감 (메시지 없이)
+                try:
                     numeric_values = pd.to_numeric(pivot_table.values.flatten(), errors='coerce')
                     valid_values = numeric_values[~np.isnan(numeric_values)]
                     if valid_values.size > 0:
@@ -304,14 +238,17 @@ if df is not None: # df가 None이 아닌 경우에만 진행
                                 for y_idx, x_idx in zip(max_y_indices, max_x_indices):
                                     fig.add_trace(go.Scatter(
                                         x=[pivot_table.columns[x_idx]], y=[pivot_table.index[y_idx]],
-                                        mode='markers+text', marker=dict(size=12, color='red', symbol='circle-open', line=dict(width=3)),
-                                        text=[f'<b>{highlight_text_prefix} {int(max_value)}{highlight_text_suffix}</b>'], textposition='top right',
-                                        textfont=dict(color='red', size=12, family="Arial, sans-serif"), hoverinfo='none'
+                                        mode='markers+text',
+                                        # 마커: 노란색, 검은색 테두리 / 텍스트: 검은색 (가독성 위주)
+                                        marker=dict(size=12, color='yellow', symbol='circle-open', line=dict(width=2, color='black')),
+                                        text=[f'<b>{highlight_text_prefix} {int(max_value)}{highlight_text_suffix}</b>'],
+                                        textposition='top right',
+                                        textfont=dict(color='black', size=12, family="Arial, sans-serif"), # 텍스트 검은색 유지
+                                        hoverinfo='none'
                                     ))
-                except Exception:
-                     pass # 오류 발생 시 하이라이트 생략, 메시지 없음
+                except Exception: pass
 
-            # --- 레이아웃 업데이트 (Spikelines 포함) ---
+            # 레이아웃 업데이트 (Spikelines 포함)
             fig.update_layout(
                 title={'text': title, 'y':0.95, 'x':0.5, 'xanchor': 'center', 'yanchor': 'top', 'font': {'size': 20, 'family': "Arial Black, sans-serif", 'color': 'black'}},
                 xaxis=dict(title='시간대', fixedrange=True, tickangle=0, showspikes=True, spikemode='across', spikesnap='data', spikethickness=1, spikecolor='grey'),
@@ -321,18 +258,15 @@ if df is not None: # df가 None이 아닌 경우에만 진행
             )
 
             # Y축 정렬 및 타입 설정
-            if analysis_type == '운영 대수':
-                 fig.update_yaxes(type='category', categoryorder='array', categoryarray=sorted(pivot_table.index.astype(str)))
-            else:
-                 fig.update_yaxes(type='category', categoryorder='array', categoryarray=sorted(pivot_table.index.astype(str)))
+            if analysis_type == '운영 대수': fig.update_yaxes(type='category', categoryorder='array', categoryarray=sorted(pivot_table.index.astype(str)))
+            else: fig.update_yaxes(type='category', categoryorder='array', categoryarray=sorted(pivot_table.index.astype(str)))
 
-            # Streamlit에 그래프 표시
             st.plotly_chart(fig, use_container_width=True)
 
-            # --- 요약 정보 표시 ---
+            # 요약 정보 표시
             st.markdown("---")
             st.subheader("📊 요약 정보")
-            if summary: # 요약 정보가 있는 경우에만 표시
+            if summary:
                 if analysis_type == '운영 대수':
                     summary_cols = st.columns(4)
                     with summary_cols[0]: st.metric(label="총 운영된 차량 수", value=f"{summary.get('total_units', 'N/A')} 대")
@@ -352,19 +286,11 @@ if df is not None: # df가 None이 아닌 경우에만 진행
                     with time_cols[0]: st.metric(label="전체 운영 시간", value=f"{summary.get('total_time', 'N/A')}")
                     with time_cols[1]: st.metric(label="차량 평균 운영 시간", value=f"{summary.get('avg_time', 'N/A')}", delta=f"{summary.get('avg_time_ratio', 0):.1f}%", delta_color="off")
                     with time_cols[2]: st.metric(label=f"최소 운영 ({summary.get('min_time_unit', 'N/A')})", value=f"{summary.get('min_time', 'N/A')}", delta=f"{summary.get('min_time_ratio', 0):.1f}%", delta_color="inverse")
+                    # 아래 라인에서 잘렸던 것 같습니다. 완전한 코드로 복구합니다.
                     with time_cols[3]: st.metric(label=f"최대 운영 ({summary.get('max_time_unit', 'N/A')})", value=f"{summary.get('max_time', 'N/A')}", delta=f"{summary.get('max_time_ratio', 0):.1f}%", delta_color="normal")
-            # else: # 요약 정보 없는 경우 메시지 제거
-            #    st.info("요약 정보를 표시할 데이터가 없습니다.")
 
-        # else: # 피벗 테이블 없는 경우 메시지 제거
-            # st.warning("피벗 테이블 데이터가 비어있거나 생성되지 않았습니다.")
-
-    # elif uploaded_file is not None and not pivot_data: # 메시지 제거
-    #    pass
 
 elif uploaded_file is None:
-    # 초기 안내 메시지 정도는 남겨두는 것이 좋을 수 있습니다.
     st.info("👈 사이드바에서 CSV 파일을 업로드하고 옵션을 선택하면 분석 결과를 볼 수 있습니다.")
 
-# else: # df가 None인 경우 등의 최종 오류 메시지 제거
-#    pass
+# else 부분은 제거하여 간결화
