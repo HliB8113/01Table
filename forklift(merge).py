@@ -130,7 +130,7 @@ def generate_pivot(original_df, month, department, process, forklift_class, work
 
     if analysis_type == '운영 대수':
         # '시작 날짜'를 'MM-DD' 형식으로 변환하여 인덱스로 사용
-        filtered_df['시작 날짜_표시용'] = filtered_df['시작 날짜'].dt.strftime('%m-%d')
+        filtered_df['시작 날짜_표시용'] = filtered_df['시작 날짜'].dt.strftime('%m-%d') # <<< 'MM-DD' 형식 적용 부분
         index_name = '시작 날짜_표시용' # 피벗 인덱스용 컬럼
         value_name = '차대 코드'
         agg_func = 'nunique' # 고유한 차대 코드 개수 (대수)
@@ -279,7 +279,7 @@ if df is not None and not df.empty:
             z=pivot_table.values,
             x=pivot_table.columns, # 시간대
             y=pivot_table.index,   # 운영 대수 시 'MM-DD', 운영 횟수 시 '차대 코드'
-            colorscale='Purples', # <<< 보라색 계열 색상 스케일 적용
+            colorscale='Purples', # 보라색 계열 색상 스케일 적용
             hoverinfo='text',
             text=tooltip_texts,
             zmin=0, # 최소값은 0으로 고정
@@ -309,7 +309,7 @@ if df is not None and not df.empty:
                             for y_idx, x_idx in zip(max_y_indices, max_x_indices):
                                 fig.add_trace(go.Scatter(
                                     x=[pivot_table.columns[x_idx]],
-                                    y=[pivot_table.index[y_idx]],
+                                    y=[pivot_table.index[y_idx]], # y 인덱스는 이미 'MM-DD' 또는 '차대 코드' 형식
                                     mode='markers+text',
                                     marker=dict(size=12, color='red', symbol='circle-open', line=dict(width=3)),
                                     text=[f'<b>{highlight_text_prefix} {int(max_value)}{highlight_text_suffix}</b>'], # 볼드 처리
@@ -322,7 +322,7 @@ if df is not None and not df.empty:
 
 
         # 레이아웃 업데이트
-        y_axis_title = '시작 날짜' if index_name == '시작 날짜_표시용' else index_name # Y축 제목 설정
+        y_axis_title = '시작 날짜' if index_name == '시작 날짜_표시용' else index_name # Y축 제목 설정 ('운영 대수'시 '시작 날짜'로 표시)
 
         fig.update_layout(
             title={
@@ -355,7 +355,7 @@ if df is not None and not df.empty:
             )
         )
 
-        # Y축 정렬: '운영 대수'는 날짜순, '운영 횟수'는 차대 코드 이름순
+        # Y축 정렬: '운영 대수'는 날짜순('MM-DD' 문자열 정렬), '운영 횟수'는 차대 코드 이름순
         if analysis_type == '운영 대수':
              # 인덱스('MM-DD')를 문자열로 정렬
              fig.update_yaxes(categoryorder='array', categoryarray=sorted(pivot_table.index.astype(str)))
@@ -371,7 +371,7 @@ if df is not None and not df.empty:
         st.subheader("📊 요약 정보")
         if summary: # summary 딕셔너리가 비어있지 않을 때만 표시
             if analysis_type == '운영 대수':
-                # 요약 정보 스타일 개선
+                # 요약 정보 스타일 개선 (st.metric 사용)
                 summary_cols = st.columns(4) # 4개 컬럼으로 배치
                 with summary_cols[0]:
                     st.metric(label="총 운영된 차량 수", value=f"{summary.get('total_units', 'N/A')} 대")
@@ -420,5 +420,7 @@ elif uploaded_file is None:
 
 # 그 외 파일 처리 중 오류 발생 시 (df가 None으로 설정됨)
 else:
-    if 'df' not in locals() or df is None: # df 변수 자체가 없거나 None일 때 (초기 오류)
+    # df 변수가 정의되지 않았거나 None일 때 (초기 로딩/처리 단계 오류)
+    # sidebar에서 이미 오류 메시지가 표시되었을 가능성이 높음
+    if 'df' not in locals() or df is None:
          st.warning("파일을 처리하는 중 오류가 발생했습니다. 사이드바에서 오류 메시지를 확인하거나 파일을 다시 업로드해주세요.")
