@@ -266,6 +266,17 @@ if df is not None and not df.empty:
 
     # --- 시각화 (피벗 테이블이 비어있지 않을 때) ---
     if not pivot_table.empty:
+
+        # ===== 임시 추가: 피벗 테이블 인덱스 확인 =====
+        # '운영 대수' 분석 시, 실제 피벗 테이블 인덱스 값을 출력하여 'MM-DD' 형식인지 확인합니다.
+        if analysis_type == '운영 대수':
+            st.markdown("---") # 구분선
+            st.subheader("🕵️‍♂️ [진단용] 피벗 테이블 인덱스 확인")
+            st.write("아래 값들이 'MM-DD' 형식(예: '01-01')이어야 합니다:")
+            st.dataframe(pivot_table.index) # 데이터프레임 형태로 보여주기
+            st.markdown("---") # 구분선
+        # ==========================================
+
         fig = make_subplots(rows=1, cols=1)
 
         # 툴팁 텍스트 생성
