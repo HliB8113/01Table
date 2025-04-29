@@ -14,79 +14,93 @@ with st.sidebar:
 
     if uploaded_file is not None:
         try:
-            # --- 헤더 없이 파일 읽기 및 컬럼명 직접 지정 ---
-            # 파일에 헤더 행이 없다고 명시 (header=None)
+            # --- 헤더가 있는 CSV 파일 읽기 + 오류 행 건너뛰기 ---
+            st.info("파일 로딩 시도 중... 문제가 있는 행은 건너뛸 수 있습니다.")
             try:
-                df_initial = pd.read_csv(uploaded_file, header=None, encoding='cp949')
+                # header=0: 첫 행을 헤더로 읽음
+                # sep=',' : 쉼표를 구분자로 명시
+                # on_bad_lines='skip': 형식 오류 발생 시 해당 행 건너뛰기
+                df_initial = pd.read_csv(
+                    uploaded_file,
+                    encoding='cp949',
+                    header=0,
+                    sep=',',
+                    on_bad_lines='skip' # 중요: 오류 행 건너뛰기
+                )
+                st.write("cp949 인코딩으로 로딩 시도 완료.")
             except UnicodeDecodeError:
                 st.warning("cp949 인코딩 실패, utf-8로 재시도합니다.")
-                df_initial = pd.read_csv(uploaded_file, header=None, encoding='utf-8')
+                df_initial = pd.read_csv(
+                    uploaded_file,
+                    encoding='utf-8',
+                    header=0,
+                    sep=',',
+                    on_bad_lines='skip' # 중요: 오류 행 건너뛰기
+                )
+                st.write("utf-8 인코딩으로 로딩 시도 완료.")
+             # skip 발생 시 실제 로드된 데이터가 줄어들 수 있음
             except Exception as e:
-                st.error(f"파일 로딩 중 오류 발생: {e}")
+                 # 다른 종류의 CSV 파싱 오류 처리
+                if 'tokenizing data' in str(e):
+                     st.error(f"파일 파싱 오류: {e}. 파일 내용이나 형식을 확인해주세요. 문제가 지속되면 CSV 파일을 다른 프로그램(예: Excel, 메모장)에서 열어 다시 저장해보세요.")
+                else:
+                    st.error(f"파일 로딩 중 예상치 못한 오류 발생: {e}")
                 st.stop()
 
-            st.success("파일 로딩 성공 (헤더 없음으로 처리)!")
 
-            # 예상되는 컬럼 개수 확인 (파일 형식 검증 차원)
-            expected_columns = 7 # 실제 데이터 컬럼 수 + 시간대 컬럼? (디버그 출력 기준 7개)
-            # ---> 만약 실제 데이터 컬럼이 8개라면 expected_columns = 8 로 수정 필요
-            if df_initial.shape[1] < expected_columns:
-                 st.error(f"오류: 파일의 컬럼 개수({df_initial.shape[1]})가 예상({expected_columns})보다 적습니다. 파일 형식을 확인하세요.")
-                 st.stop()
-            # 만약 컬럼 개수가 예상보다 많을 경우, 필요한 앞부분만 사용
-            if df_initial.shape[1] > expected_columns:
-                st.warning(f"파일의 컬럼 개수({df_initial.shape[1]})가 예상({expected_columns})보다 많습니다. 앞의 {expected_columns}개 컬럼만 사용합니다.")
-                df_initial = df_initial.iloc[:, :expected_columns]
+            if df_initial.empty:
+                st.error("파일 로딩 후 데이터가 비어있습니다. 파일 내용 또는 건너뛴 행을 확인하세요.")
+                st.stop()
+
+            st.success("파일 로딩 성공! (형식 오류가 있는 행은 건너뛰었을 수 있습니다)")
 
 
-            # 컬럼명 직접 할당 (디버그 출력 기반 순서)
-            # ['T', 'R/T-38', '김포 1층', '2025-01-26', '119.0', '00:44:08', '00:40']
-            column_names = ['부서', '차대 코드', '작업 장소', '시작 날짜', '운영 시간(초)', '시작 시간', '시간대']
-            df_initial.columns = column_names
-            st.info("컬럼명이 성공적으로 할당되었습니다.")
-            # st.write("Debug: Assigned column names:", df_initial.columns.tolist()) # 디버깅 필요시 주석 해제
+            # --- 컬럼명 공백 제거 ---
+            original_columns = df_initial.columns.tolist()
+            df_initial.columns = df_initial.columns.str.strip()
+            cleaned_columns = df_initial.columns.tolist()
 
+            if original_columns != cleaned_columns:
+                st.info("컬럼명 앞뒤 공백이 제거되었습니다.")
+            st.write("Debug: 로드된 컬럼명:", cleaned_columns) # 실제 로드된 컬럼 확인
 
-            # --- 필수 컬럼 확인 (이제 할당된 이름으로 확인) ---
+            # --- 필수 컬럼 확인 (헤더에서 읽은 컬럼 기준) ---
+            # 이제 파일 헤더에서 8개 컬럼을 읽었을 것으로 기대
             required_columns = ['시간대', '시작 날짜', '차대 코드', '운영 시간(초)']
-            optional_columns = ['부서', '공정', '차대 분류', '작업 장소']
+            optional_columns = ['부서', '공정', '차대 분류', '작업 장소'] # '공정'은 없을 것임
 
-            assigned_columns = df_initial.columns.tolist()
-            missing_required = [col for col in required_columns if col not in assigned_columns]
-            # 실제 파일에 없는 컬럼 (수동 할당 시에도 없을 수 있음, 예: '공정', '차대 분류')
-            # '부서'는 첫번째 컬럼으로 할당했으므로 리스트에 없을 것임
-            missing_optional = [col for col in optional_columns if col not in assigned_columns]
-
+            missing_required = [col for col in required_columns if col not in df_initial.columns]
+            # '차대 분류'는 이제 헤더에 있으므로 발견될 것임
+            missing_optional = [col for col in optional_columns if col not in df_initial.columns]
 
             if missing_required:
-                # 이 오류는 이제 발생하면 안 됨 (컬럼명을 직접 할당했으므로)
-                st.error(f"코드 오류: 필수 컬럼 할당 실패 - {', '.join(missing_required)}")
+                st.error(f"오류: 필수 컬럼이 누락되었습니다 - {', '.join(missing_required)}. 파일 헤더를 다시 확인하거나 파일이 올바른지 확인하세요.")
+                st.write("현재 파일에서 읽어온 컬럼명:", df_initial.columns.tolist())
                 st.stop()
             else:
                 df = df_initial.copy()
 
             if missing_optional:
-                st.warning(f"경고: 다음 필터링 컬럼이 파일에 없어 '정보 없음'으로 처리됩니다 - {', '.join(missing_optional)}")
+                st.warning(f"경고: 다음 필터링 컬럼이 파일에 없습니다 - {', '.join(missing_optional)}. 해당 필터는 비활성화되거나 '정보 없음'으로 표시됩니다.")
                 for col in missing_optional:
                     if col not in df.columns:
-                       df[col] = '정보 없음'
+                        df[col] = '정보 없음'
 
-
-            # --- 데이터 타입 변환 (할당된 컬럼명 기준으로 진행) ---
+            # --- 데이터 타입 변환 ---
             try:
                 df['시간대'] = pd.to_datetime(df['시간대'], format='%H:%M', errors='coerce').dt.strftime('%H:%M')
                 df.dropna(subset=['시간대'], inplace=True)
                 if df.empty: st.warning("시간대 변환 후 유효 데이터 없음"); st.stop()
-            except Exception as e: st.error(f"'시간대' 변환 오류: {e}. 데이터 확인 필요 (예: HH:MM 형식)"); st.stop()
+            except Exception as e: st.error(f"'시간대' 변환 오류: {e}"); st.stop()
 
             try:
                 df['시작 날짜'] = pd.to_datetime(df['시작 날짜'], errors='coerce')
                 df.dropna(subset=['시작 날짜'], inplace=True)
                 if df.empty: st.warning("시작 날짜 변환 후 유효 데이터 없음"); st.stop()
                 df['월'] = df['시작 날짜'].dt.month
-            except Exception as e: st.error(f"'시작 날짜' 변환 오류: {e}. 데이터 확인 필요 (날짜 형식)"); st.stop()
+            except Exception as e: st.error(f"'시작 날짜' 변환 오류: {e}"); st.stop()
 
-            # 운영 시간(초) - object나 float일 수 있으므로 numeric 변환
+            # '운영 시간(초)' 컬럼이 object 타입일 수 있으므로 numeric 변환
             df['운영 시간(초)'] = pd.to_numeric(df['운영 시간(초)'], errors='coerce').fillna(0).astype(int)
 
             # 12월 데이터 제외
@@ -100,17 +114,17 @@ with st.sidebar:
             analysis_type = st.radio("분석 유형 선택:", ('운영 대수', '운영 횟수'))
 
             month_options = ['전체'] + sorted(df['월'].dropna().unique().astype(int).tolist()) if '월' in df.columns else ['전체']
-            # 할당된 컬럼명 기반으로 옵션 생성
+            # 컬럼 존재 여부 확인
             department_options = ['전체'] + sorted(df['부서'].dropna().unique().tolist()) if '부서' in df.columns else ['전체']
             process_options = ['전체'] + sorted(df['공정'].dropna().unique().tolist()) if '공정' in df.columns else ['전체'] # 없음
-            forklift_class_options = ['전체'] + sorted(df['차대 분류'].dropna().unique().tolist()) if '차대 분류' in df.columns else ['전체'] # 없음
+            forklift_class_options = ['전체'] + sorted(df['차대 분류'].dropna().unique().tolist()) if '차대 분류' in df.columns else ['전체'] # 있음
             workplace_options = ['전체'] + sorted(df['작업 장소'].dropna().unique().tolist()) if '작업 장소' in df.columns else ['전체']
 
             selected_month = st.selectbox('월 선택:', month_options)
-            # 컬럼 존재 여부에 따라 비활성화
+            # 컬럼 없으면 비활성화
             selected_department = st.selectbox('부서 선택:', department_options, disabled=('부서' not in df.columns))
             selected_process = st.selectbox('공정 선택:', process_options, disabled=('공정' not in df.columns))
-            selected_forklift_class = st.selectbox('차대 분류 선택:', forklift_class_options, disabled=('차대 분류' not in df.columns))
+            selected_forklift_class = st.selectbox('차대 분류 선택:', forklift_class_options, disabled=('차대 분류' not in df.columns)) # 이제 활성화될 것임
             selected_workplace = st.selectbox('작업 장소 선택:', workplace_options, disabled=('작업 장소' not in df.columns))
             graph_height = st.slider('그래프 높이 선택', 300, 1500, 900)
 
@@ -142,7 +156,7 @@ if df is not None and not df.empty:
             filtered_df = filtered_df[filtered_df['부서'] == department]
         if process != '전체' and '공정' in filtered_df.columns: # 없음
             filtered_df = filtered_df[filtered_df['공정'] == process]
-        if forklift_class != '전체' and '차대 분류' in filtered_df.columns: # 없음
+        if forklift_class != '전체' and '차대 분류' in filtered_df.columns: # 있음
             filtered_df = filtered_df[filtered_df['차대 분류'] == forklift_class]
         if workplace != '전체' and '작업 장소' in filtered_df.columns:
             filtered_df = filtered_df[filtered_df['작업 장소'] == workplace]
