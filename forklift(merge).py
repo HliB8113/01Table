@@ -39,6 +39,7 @@ with st.sidebar:
                 for col in missing_optional:
                     df[col] = '정보 없음'
             try:
+                # 시간대 형식 '%H:%M'으로 통일, 잘못된 형식은 NaT로 변환 후 제거
                 df['시간대'] = pd.to_datetime(df['시간대'], format='%H:%M', errors='coerce').dt.strftime('%H:%M')
                 df.dropna(subset=['시간대'], inplace=True)
                 if df.empty:
@@ -61,9 +62,9 @@ with st.sidebar:
                 df['운영 시간(초)'] = pd.to_numeric(df['운영 시간(초)'], errors='coerce').fillna(0).astype(int)
             except Exception as e:
                 st.warning(f"운영 시간(초) 컬럼 처리 중 경미한 오류 발생 (기본값 0으로 대체): {e}")
-                pass
+                pass # 일부 변환 실패 시 0으로 처리하므로 계속 진행
             
-            excluded_month = 12
+            excluded_month = 12 # 예시: 12월 데이터 제외
             df = df[df['월'] != excluded_month]
             if df.empty:
                 st.warning(f"{excluded_month}월 데이터를 제외한 후 분석할 데이터가 없습니다.")
@@ -85,7 +86,7 @@ with st.sidebar:
             
             st.header("📐 그래프 설정")
             graph_height = st.slider('그래프 높이 조절', min_value=300, max_value=1500, value=900, step=50, key='height_slider')
-            graph_width = st.slider('그래프 너비 조절', min_value=300, max_value=2000, value=1200, step=50, key='width_slider') # 너비 조절 슬라이더 추가
+            graph_width = st.slider('그래프 너비 조절', min_value=300, max_value=2000, value=1200, step=50, key='width_slider')
 
         except pd.errors.EmptyDataError:
             st.error("업로드된 CSV 파일이 비어있습니다.")
@@ -113,7 +114,6 @@ def generate_pivot(original_df, month, department, process, forklift_class, work
     title = "분석 결과"
     index_name = "분석 기준"
     
-    # selected_month가 int일 경우를 대비하여 문자열로 변환
     month_str = str(selected_month) + "월" if isinstance(selected_month, int) else selected_month
 
     if analysis_type == '운영 대수':
@@ -126,7 +126,10 @@ def generate_pivot(original_df, month, department, process, forklift_class, work
         try:
             pivot_table_result = filtered_df.pivot_table(index=index_name, columns='시간대', values=value_name, aggfunc=agg_func).fillna(0)
             if not pivot_table_result.empty:
-                pivot_table_result = pivot_table_result.sort_index(axis=1) 
+                # 시간대 컬럼 정렬 (문자열 'HH:MM' 형식으로 정렬)
+                sorted_time_columns = sorted(pivot_table_result.columns)
+                pivot_table_result = pivot_table_result[sorted_time_columns]
+                # 인덱스(날짜) 정렬
                 pivot_table_result = pivot_table_result.sort_index(axis=0) 
             pivot_data['units'] = pivot_table_result
         except Exception:
@@ -158,7 +161,10 @@ def generate_pivot(original_df, month, department, process, forklift_class, work
             pivot_table_counts = filtered_df.pivot_table(index=index_name, columns='시간대', values='시작 날짜', aggfunc='count').fillna(0)
             pivot_table_times = filtered_df.pivot_table(index=index_name, columns='시간대', values='운영 시간(초)', aggfunc='sum').fillna(0)
             if not pivot_table_counts.empty:
-                pivot_table_counts = pivot_table_counts.sort_index(axis=1) 
+                # 시간대 컬럼 정렬 (문자열 'HH:MM' 형식으로 정렬)
+                sorted_time_columns = sorted(pivot_table_counts.columns)
+                pivot_table_counts = pivot_table_counts[sorted_time_columns]
+                # 인덱스(차대코드) 정렬
                 pivot_table_counts = pivot_table_counts.sort_index(axis=0) 
                 pivot_table_times = pivot_table_times.reindex(index=pivot_table_counts.index, columns=pivot_table_counts.columns).fillna(0)
             pivot_data['counts'] = pivot_table_counts
@@ -279,20 +285,42 @@ if df is not None:
            
             fig.update_layout(
                 title={'text': title, 'y':0.95, 'x':0.5, 'xanchor': 'center', 'yanchor': 'top', 'font': {'size': 20, 'family': "Arial Black, sans-serif", 'color': 'black'}},
-                xaxis=dict(title='시간대', fixedrange=False, tickangle=0, showspikes=True, spikemode='across', spikesnap='data', spikethickness=1, spikecolor='grey'),
-                yaxis=dict(title=y_axis_title, fixedrange=False, showspikes=True, spikemode='across', spikesnap='data', spikethickness=1, spikecolor='grey'),
-                plot_bgcolor='rgba(245, 245, 245, 1)', paper_bgcolor='white', margin=dict(l=100, r=50, t=100, b=80), 
+                xaxis=dict(
+                    title='시간대', 
+                    fixedrange=False, 
+                    tickangle=45,     # x축 레이블 45도 회전
+                    automargin=True,  # 레이블 표시를 위한 자동 여백 조정
+                    showspikes=True, 
+                    spikemode='across', 
+                    spikesnap='data', 
+                    spikethickness=1, 
+                    spikecolor='grey'
+                ),
+                yaxis=dict(
+                    title=y_axis_title, 
+                    fixedrange=False, 
+                    automargin=True,  # y축도 자동 여백 조정 고려
+                    showspikes=True, 
+                    spikemode='across', 
+                    spikesnap='data', 
+                    spikethickness=1, 
+                    spikecolor='grey'
+                ),
+                plot_bgcolor='rgba(245, 245, 245, 1)', 
+                paper_bgcolor='white', 
+                margin=dict(l=100, r=50, t=100, b=80), 
                 height=graph_height, 
-                width=graph_width, # 그래프 너비 적용
-                hovermode='closest', coloraxis_colorbar=dict(title='운영 대수' if analysis_type == '운영 대수' else '운영 횟수')
+                width=graph_width, 
+                hovermode='closest', 
+                coloraxis_colorbar=dict(title='운영 대수' if analysis_type == '운영 대수' else '운영 횟수')
             )
             
-            if analysis_type == '운영 대수': 
+            # y축 순서 정렬 (문자열로 변환하여 정렬)
+            if analysis_type == '운영 대수': # 날짜 정렬 ('mm-dd')
                  fig.update_yaxes(type='category', categoryorder='array', categoryarray=sorted(pivot_table.index.astype(str)))
-            else: 
+            else: # 차대 코드 정렬 (기본 문자열 정렬)
                  fig.update_yaxes(type='category', categoryorder='array', categoryarray=sorted(pivot_table.index.astype(str)))
 
-            # use_container_width를 False로 설정하여 레이아웃에서 지정한 너비와 높이를 사용하도록 함
             st.plotly_chart(fig, use_container_width=False) 
 
             st.markdown("---")
