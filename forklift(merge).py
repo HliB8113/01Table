@@ -61,9 +61,9 @@ with st.sidebar:
                 df['운영 시간(초)'] = pd.to_numeric(df['운영 시간(초)'], errors='coerce').fillna(0).astype(int)
             except Exception as e:
                 st.warning(f"운영 시간(초) 컬럼 처리 중 경미한 오류 발생 (기본값 0으로 대체): {e}")
-                pass # 일부 변환 실패 시 0으로 처리하므로 계속 진행
+                pass
             
-            excluded_month = 12 # 예시: 12월 데이터 제외
+            excluded_month = 12
             df = df[df['월'] != excluded_month]
             if df.empty:
                 st.warning(f"{excluded_month}월 데이터를 제외한 후 분석할 데이터가 없습니다.")
@@ -85,6 +85,7 @@ with st.sidebar:
             
             st.header("📐 그래프 설정")
             graph_height = st.slider('그래프 높이 조절', min_value=300, max_value=1500, value=900, step=50, key='height_slider')
+            graph_width = st.slider('그래프 너비 조절', min_value=300, max_value=2000, value=1200, step=50, key='width_slider') # 너비 조절 슬라이더 추가
 
         except pd.errors.EmptyDataError:
             st.error("업로드된 CSV 파일이 비어있습니다.")
@@ -112,21 +113,24 @@ def generate_pivot(original_df, month, department, process, forklift_class, work
     title = "분석 결과"
     index_name = "분석 기준"
     
+    # selected_month가 int일 경우를 대비하여 문자열로 변환
+    month_str = str(selected_month) + "월" if isinstance(selected_month, int) else selected_month
+
     if analysis_type == '운영 대수':
         filtered_df['시작 날짜_표시용'] = filtered_df['시작 날짜'].dt.strftime('%m-%d')
         index_name = '시작 날짜_표시용'
         value_name = '차대 코드'
         agg_func = 'nunique'
-        title = f'지게차 일자별 운영 대수 ({selected_month if isinstance(selected_month, str) else str(selected_month) + "월"})' if selected_month != '전체' else '지게차 일자별 운영 대수 (전체 월)'
+        title = f'지게차 일자별 운영 대수 ({month_str})' if selected_month != '전체' else '지게차 일자별 운영 대수 (전체 월)'
         
         try:
             pivot_table_result = filtered_df.pivot_table(index=index_name, columns='시간대', values=value_name, aggfunc=agg_func).fillna(0)
             if not pivot_table_result.empty:
-                pivot_table_result = pivot_table_result.sort_index(axis=1) # 시간대별 정렬
-                pivot_table_result = pivot_table_result.sort_index(axis=0) # 날짜별 정렬
+                pivot_table_result = pivot_table_result.sort_index(axis=1) 
+                pivot_table_result = pivot_table_result.sort_index(axis=0) 
             pivot_data['units'] = pivot_table_result
         except Exception:
-             return {}, title, index_name, {} # 피벗 테이블 생성 실패 시 빈 데이터 반환
+             return {}, title, index_name, {} 
         
         if not pivot_table_result.empty:
             try:
@@ -146,7 +150,7 @@ def generate_pivot(original_df, month, department, process, forklift_class, work
                 
     elif analysis_type == '운영 횟수':
         index_name = '차대 코드'
-        title = f'지게차 시간대별 운영 횟수 ({selected_month if isinstance(selected_month, str) else str(selected_month) + "월"})' if selected_month != '전체' else '지게차 시간대별 운영 횟수 (전체 월)'
+        title = f'지게차 시간대별 운영 횟수 ({month_str})' if selected_month != '전체' else '지게차 시간대별 운영 횟수 (전체 월)'
         pivot_table_counts = pd.DataFrame()
         pivot_table_times = pd.DataFrame()
         
@@ -154,8 +158,8 @@ def generate_pivot(original_df, month, department, process, forklift_class, work
             pivot_table_counts = filtered_df.pivot_table(index=index_name, columns='시간대', values='시작 날짜', aggfunc='count').fillna(0)
             pivot_table_times = filtered_df.pivot_table(index=index_name, columns='시간대', values='운영 시간(초)', aggfunc='sum').fillna(0)
             if not pivot_table_counts.empty:
-                pivot_table_counts = pivot_table_counts.sort_index(axis=1) # 시간대별 정렬
-                pivot_table_counts = pivot_table_counts.sort_index(axis=0) # 차대 코드별 정렬
+                pivot_table_counts = pivot_table_counts.sort_index(axis=1) 
+                pivot_table_counts = pivot_table_counts.sort_index(axis=0) 
                 pivot_table_times = pivot_table_times.reindex(index=pivot_table_counts.index, columns=pivot_table_counts.columns).fillna(0)
             pivot_data['counts'] = pivot_table_counts
             pivot_data['times'] = pivot_table_times
@@ -239,23 +243,20 @@ if df is not None:
 
             heatmap = go.Heatmap(
                 z=pivot_table.values, x=pivot_table.columns, y=pivot_table.index,
-                colorscale=[[0, 'rgb(255,255,255)'], [0.01, 'rgb(240, 230, 247)'], [1, '#5f0080']], # 흰색 - 연보라 - 진보라
+                colorscale=[[0, 'rgb(255,255,255)'], [0.01, 'rgb(240, 230, 247)'], [1, '#5f0080']],
                 hoverinfo='text', text=tooltip_texts, zmin=0,
                 colorbar=dict(title='값' if analysis_type == '운영 대수' else '횟수')
             )
             fig.add_trace(heatmap)
 
-            # --- 최댓값 하이라이트 추가 ---
             if pivot_table.values.size > 0:
                 try:
-                    # NaN이 아닌 숫자 값들만 고려하여 최댓값 계산
                     numeric_values = pd.to_numeric(pivot_table.values.flatten(), errors='coerce')
                     valid_values = numeric_values[~np.isnan(numeric_values)]
                     
                     if valid_values.size > 0:
                         max_value = valid_values.max()
-                        if max_value > 0: # 0보다 클 때만 표시
-                            # pivot_table.values에서 직접 max_value 위치 찾기
+                        if max_value > 0: 
                             max_indices = np.where(pivot_table.values == max_value)
                             
                             if len(max_indices[0]) > 0:
@@ -274,25 +275,25 @@ if df is not None:
                                         hoverinfo='none'
                                     ))
                 except Exception:
-                    pass # 오류 발생 시 하이라이트 생략하고 조용히 넘어감
-            # --- 최댓값 하이라이트 끝 ---
-
+                    pass 
+           
             fig.update_layout(
                 title={'text': title, 'y':0.95, 'x':0.5, 'xanchor': 'center', 'yanchor': 'top', 'font': {'size': 20, 'family': "Arial Black, sans-serif", 'color': 'black'}},
                 xaxis=dict(title='시간대', fixedrange=False, tickangle=0, showspikes=True, spikemode='across', spikesnap='data', spikethickness=1, spikecolor='grey'),
                 yaxis=dict(title=y_axis_title, fixedrange=False, showspikes=True, spikemode='across', spikesnap='data', spikethickness=1, spikecolor='grey'),
-                plot_bgcolor='rgba(245, 245, 245, 1)', paper_bgcolor='white', margin=dict(l=100, r=50, t=100, b=80), height=graph_height,
+                plot_bgcolor='rgba(245, 245, 245, 1)', paper_bgcolor='white', margin=dict(l=100, r=50, t=100, b=80), 
+                height=graph_height, 
+                width=graph_width, # 그래프 너비 적용
                 hovermode='closest', coloraxis_colorbar=dict(title='운영 대수' if analysis_type == '운영 대수' else '운영 횟수')
             )
-
-            # y축 순서 정렬 (문자열로 변환하여 정렬)
-            if analysis_type == '운영 대수': # 날짜 정렬 ('mm-dd')
+            
+            if analysis_type == '운영 대수': 
                  fig.update_yaxes(type='category', categoryorder='array', categoryarray=sorted(pivot_table.index.astype(str)))
-            else: # 차대 코드 정렬 (기본 문자열 정렬)
+            else: 
                  fig.update_yaxes(type='category', categoryorder='array', categoryarray=sorted(pivot_table.index.astype(str)))
 
-
-            st.plotly_chart(fig, use_container_width=True)
+            # use_container_width를 False로 설정하여 레이아웃에서 지정한 너비와 높이를 사용하도록 함
+            st.plotly_chart(fig, use_container_width=False) 
 
             st.markdown("---")
             st.subheader("📊 요약 정보")
@@ -303,7 +304,7 @@ if df is not None:
                     with summary_cols[1]: st.metric(label="일 평균 운영 대수", value=f"{summary.get('avg_units', 'N/A')} 대", delta=f"{summary.get('avg_units_ratio', 0):.1f}%", delta_color="off")
                     with summary_cols[2]: st.metric(label=f"최소 운영 ({summary.get('min_units_day', 'N/A')})", value=f"{summary.get('min_units', 'N/A')} 대", delta=f"{summary.get('min_units_ratio', 0):.1f}%", delta_color="inverse")
                     with summary_cols[3]: st.metric(label=f"최대 운영 ({summary.get('max_units_day', 'N/A')})", value=f"{summary.get('max_units', 'N/A')} 대", delta=f"{summary.get('max_units_ratio', 0):.1f}%", delta_color="normal")
-                else: # 운영 횟수
+                else: 
                     st.markdown("##### 🔢 운영 횟수 요약 (차량별)")
                     count_cols = st.columns(4)
                     with count_cols[0]: st.metric(label="전체 운영 횟수", value=f"{summary.get('total_counts', 'N/A')} 회")
@@ -323,10 +324,8 @@ if df is not None:
              st.warning("선택하신 필터 조건에 해당하는 데이터가 없습니다. 다른 필터 옵션을 선택해 보세요.")
         else:
             st.warning("피벗 테이블을 생성할 데이터가 없습니다. 원본 데이터를 확인하거나 필터 옵션을 조정해 주세요.")
-    elif uploaded_file is not None and df is None: # 파일은 업로드 되었으나 df가 None인 경우 (전처리 실패 등)
+    elif uploaded_file is not None and df is None: 
         st.error("데이터 처리 중 문제가 발생했습니다. 업로드된 파일의 형식을 확인하거나 필수 컬럼이 올바르게 포함되어 있는지 확인해 주세요.")
-    # df is None 이면서 uploaded_file is not None 인 경우는 이미 위에서 처리됨
-    # elif df is None and uploaded_file is not None: 이 조건은 위에서 이미 다뤄짐.
 
 elif uploaded_file is None:
     st.info("👈 사이드바에서 CSV 파일을 업로드하고 옵션을 선택하면 분석 결과를 볼 수 있습니다.")
