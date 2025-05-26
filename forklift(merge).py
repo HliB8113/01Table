@@ -100,7 +100,7 @@ with st.sidebar:
             selected_workplace = st.selectbox('📍 작업 장소 선택:', workplace_options, key='wp_select')
 
             st.header("📐 그래프 설정")
-            graph_height = st.slider('그래프 높이 조절', min_value=300, max_value=1500, value=900, step=50, key='height_slider')
+            graph_height = st.slider('그래프 높이 조절', min_value=300, max_value=2500, value=900, step=50, key='height_slider')
             graph_width = st.slider('그래프 너비 조절', min_value=300, max_value=2500, value=1800, step=50, key='width_slider')
             
             # 폰트 크기 슬라이더 초기화
