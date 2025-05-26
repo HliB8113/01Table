@@ -17,6 +17,15 @@ def format_time(seconds):
     minutes, seconds = divmod(remainder, 60)
     return f"{hours:02}:{minutes:02}:{seconds:02}"
 
+def format_to_hh_mm(seconds):
+    """초 단위 시간을 HH:MM 형식의 문자열로 변환합니다."""
+    if pd.isna(seconds) or np.isinf(seconds) or seconds < 0:
+        return "00:00"
+    seconds = int(round(seconds))
+    hours, remainder = divmod(seconds, 3600)
+    minutes, _ = divmod(remainder, 60)
+    return f"{hours:02}:{minutes:02}"
+
 # --- 사이드바 설정 ---
 with st.sidebar:
     st.header("⚙️ 데이터 업로드 및 필터")
@@ -93,13 +102,15 @@ with st.sidebar:
             st.header("📐 그래프 설정")
             graph_height = st.slider('그래프 높이 조절', min_value=300, max_value=1500, value=900, step=50, key='height_slider')
             graph_width = st.slider('그래프 너비 조절', min_value=300, max_value=2500, value=1800, step=50, key='width_slider')
+            
+            # 폰트 크기 슬라이더 초기화
+            y_axis_font_size = 10 # '운영 횟수' 용 기본값
+            bar_label_font_size = 14 # '운영 시간' 용 기본값 (키움)
+
             if analysis_type == '운영 횟수':
-                y_axis_font_size = st.slider('Y축 레이블 폰트 크기 (운영 횟수 시)', min_value=8, max_value=20, value=10, step=1, key='y_font_slider')
+                y_axis_font_size = st.slider('Y축 레이블 폰트 크기 (운영 횟수 시)', min_value=8, max_value=20, value=y_axis_font_size, step=1, key='y_font_slider')
             elif analysis_type == '운영 시간':
-                bar_label_font_size = st.slider('막대 라벨 폰트 크기 (운영 시간 시)', min_value=8, max_value=20, value=12, step=1, key='bar_font_slider') # '운영 시간' 그래프용 폰트 슬라이더
-            else:
-                y_axis_font_size = 10 # 기본값
-                bar_label_font_size = 12 # 기본값
+                bar_label_font_size = st.slider('막대 라벨 폰트 크기 (운영 시간 시)', min_value=8, max_value=24, value=bar_label_font_size, step=1, key='bar_font_slider')
 
 
         except pd.errors.EmptyDataError:
@@ -465,17 +476,33 @@ if df is not None:
                     orientation='h',
                     text=bar_texts_op_time,
                     textposition='auto',
-                    marker_color='gold', # 색상 변경: 'gold'
+                    marker_color='gold', # 색상 변경
                     name='총 운영 시간',
                     hoverinfo='y+text',
                     customdata=x_values_op_time_sec,
                     hovertemplate='<b>%{y}</b><br>총 운영 시간: %{text} (%{customdata}초)<extra></extra>',
-                    textfont=dict(size=bar_label_font_size, color='black') # 폰트 크기 및 색상 적용
+                    textfont=dict(size=bar_label_font_size, color='black') # 폰트 크기 적용
                 ))
                 
+                # X축 HH:MM 형식 눈금 생성
+                if len(x_values_op_time_sec) > 0 and max(x_values_op_time_sec) > 0:
+                    max_x_sec = max(x_values_op_time_sec)
+                    # 약 5개의 눈금 생성 (0 포함)
+                    tickvals = np.linspace(0, max_x_sec, num=5).tolist()
+                    ticktext_hh_mm = [format_to_hh_mm(s) for s in tickvals]
+                else: # 데이터가 없거나 모든 값이 0인 경우
+                    tickvals = [0]
+                    ticktext_hh_mm = ["00:00"]
+
                 fig.update_layout(
                     title={'text': current_title, 'y':0.95, 'x':0.5, 'xanchor': 'center', 'yanchor': 'top', 'font': {'size': 20, 'family': "Arial Black, sans-serif", 'color': 'black'}},
-                    xaxis=dict(title='총 운영 시간 (초)', automargin=True),
+                    xaxis=dict(
+                        title='총 운영 시간 (HH:MM)', 
+                        automargin=True,
+                        tickmode='array', # 커스텀 눈금 사용
+                        tickvals=tickvals,
+                        ticktext=ticktext_hh_mm
+                    ),
                     yaxis=dict(title='차대 코드', automargin=True, autorange="reversed",
                                categoryorder='array', categoryarray=y_labels_op_time
                               ),
@@ -490,7 +517,7 @@ if df is not None:
             else:
                  if analysis_type not in ['운영 대수', '운영 횟수', '운영 시간']:
                     st.error(f"알 수 없는 분석 유형입니다: {analysis_type}")
-                 elif current_title != "데이터 없음 (필터링 후)": # 이미 generate_pivot에서 처리된 경우는 제외
+                 elif current_title != "데이터 없음 (필터링 후)":
                     st.warning("선택된 분석 유형에 대한 데이터를 표시할 수 없습니다.")
 
             if fig is not None:
