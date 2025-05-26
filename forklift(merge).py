@@ -91,7 +91,7 @@ with st.sidebar:
 
             st.header("📐 그래프 설정")
             graph_height = st.slider('그래프 높이 조절', min_value=300, max_value=1500, value=900, step=50, key='height_slider')
-            graph_width = st.slider('그래프 너비 조절', min_value=300, max_value=2500, value=1800, step=50, key='width_slider') # 너비 기본값 조정
+            graph_width = st.slider('그래프 너비 조절', min_value=300, max_value=2500, value=1800, step=50, key='width_slider')
 
         except pd.errors.EmptyDataError:
             st.error("업로드된 CSV 파일이 비어있습니다.")
@@ -146,10 +146,7 @@ def generate_pivot(original_df, month, department, process, forklift_class, work
                 min_operating_day = daily_counts.idxmin() if not daily_counts.empty and min_operating_units > 0 else '데이터 없음'
                 max_operating_day = daily_counts.idxmax() if not daily_counts.empty and max_operating_units > 0 else '데이터 없음'
                 avg_operating_units = round(daily_counts.mean()) if not daily_counts.empty else 0
-                min_units_ratio = (min_operating_units / total_operating_units * 100) if total_operating_units > 0 else 0
-                max_units_ratio = (max_operating_units / total_operating_units * 100) if total_operating_units > 0 else 0
-                avg_units_ratio = (avg_operating_units / total_operating_units * 100) if total_operating_units > 0 else 0
-                local_summary = {'total_units': total_operating_units, 'min_units': min_operating_units, 'min_units_day': min_operating_day, 'min_units_ratio': min_units_ratio, 'max_units': max_operating_units, 'max_units_day': max_operating_day, 'max_units_ratio': max_units_ratio, 'avg_units': avg_operating_units, 'avg_units_ratio': avg_units_ratio}
+                local_summary = {'total_units': total_operating_units, 'min_units': min_operating_units, 'min_units_day': min_operating_day, 'max_units': max_operating_units, 'max_units_day': max_operating_day, 'avg_units': avg_operating_units}
             except Exception:
                 local_summary = {}
 
@@ -157,7 +154,7 @@ def generate_pivot(original_df, month, department, process, forklift_class, work
         index_name = '차대 코드'
         title_prefix = f'지게차 시간대별 운영 횟수 ({month_str})' if current_selected_month_in_sidebar != '전체' else '지게차 시간대별 운영 횟수 (전체 월)'
         pivot_table_counts = pd.DataFrame()
-        pivot_table_times_data = pd.DataFrame() # 변수명 변경
+        pivot_table_times_data = pd.DataFrame()
         forklift_summary_df = pd.DataFrame()
 
         try:
@@ -187,38 +184,33 @@ def generate_pivot(original_df, month, department, process, forklift_class, work
             st.error(f"운영 횟수 피벗 테이블 생성 중 오류: {e}")
             return {}, title_prefix, index_name, {}
 
-        if not pivot_table_counts.empty:
+        if not forklift_summary_df.empty: # 요약은 forklift_summary_df 기준으로
             try:
-                # 전체 요약 정보 계산 (기존 로직 유지)
-                unit_counts_summary = filtered_df.groupby('차대 코드')['시작 날짜'].count()
-                total_operating_counts = unit_counts_summary.sum()
-                min_operating_counts = unit_counts_summary.min() if not unit_counts_summary.empty else 0
-                max_operating_counts = unit_counts_summary.max() if not unit_counts_summary.empty else 0
-                min_operating_unit = unit_counts_summary.idxmin() if not unit_counts_summary.empty and min_operating_counts > 0 else '데이터 없음'
-                max_operating_unit = unit_counts_summary.idxmax() if not unit_counts_summary.empty and max_operating_counts > 0 else '데이터 없음'
-                avg_operating_counts = round(unit_counts_summary.mean()) if not unit_counts_summary.empty else 0
-                min_counts_ratio = (min_operating_counts / total_operating_counts * 100) if total_operating_counts > 0 else 0
-                max_counts_ratio = (max_operating_counts / total_operating_counts * 100) if total_operating_counts > 0 else 0
-                avg_counts_ratio = (avg_operating_counts / total_operating_counts * 100) if total_operating_counts > 0 else 0
+                # 전체 요약 정보 계산 (기존 로직 유지, 대상 DataFrame 변경)
+                total_operating_counts = forklift_summary_df['총 운영 횟수'].sum()
+                avg_operating_counts = round(forklift_summary_df['총 운영 횟수'].mean()) if not forklift_summary_df.empty else 0
+                min_operating_counts = forklift_summary_df['총 운영 횟수'].min() if not forklift_summary_df.empty else 0
+                max_operating_counts = forklift_summary_df['총 운영 횟수'].max() if not forklift_summary_df.empty else 0
+                min_operating_unit = forklift_summary_df['총 운영 횟수'].idxmin() if not forklift_summary_df.empty and min_operating_counts > 0 else '데이터 없음'
+                max_operating_unit = forklift_summary_df['총 운영 횟수'].idxmax() if not forklift_summary_df.empty and max_operating_counts > 0 else '데이터 없음'
 
-                operating_times_summary = filtered_df.groupby('차대 코드')['운영 시간(초)'].sum()
-                total_operating_time = operating_times_summary.sum()
-                min_operating_time = operating_times_summary.min() if not operating_times_summary.empty else 0
-                max_operating_time = operating_times_summary.max() if not operating_times_summary.empty else 0
-                min_time_unit = operating_times_summary.idxmin() if not operating_times_summary.empty and min_operating_time > 0 else '데이터 없음'
-                max_time_unit = operating_times_summary.idxmax() if not operating_times_summary.empty and max_operating_time > 0 else '데이터 없음'
-                avg_operating_time = operating_times_summary.mean() if not operating_times_summary.empty else 0
-                min_time_ratio = (min_operating_time / total_operating_time * 100) if total_operating_time > 0 else 0
-                max_time_ratio = (max_operating_time / total_operating_time * 100) if total_operating_time > 0 else 0
-                avg_time_ratio = (avg_operating_time / total_operating_time * 100) if total_operating_time > 0 else 0
+
+                total_operating_time = forklift_summary_df['총 운영 시간(초)'].sum()
+                avg_operating_time_sec = forklift_summary_df['평균 운영 시간(초)'].mean() if not forklift_summary_df.empty else 0 # 차량별 평균시간의 평균
+                min_operating_time = forklift_summary_df['총 운영 시간(초)'].min() if not forklift_summary_df.empty else 0 # 차량별 총 시간 중 최소
+                max_operating_time = forklift_summary_df['총 운영 시간(초)'].max() if not forklift_summary_df.empty else 0 # 차량별 총 시간 중 최대
+                min_time_unit = forklift_summary_df['총 운영 시간(초)'].idxmin() if not forklift_summary_df.empty and min_operating_time > 0 else '데이터 없음'
+                max_time_unit = forklift_summary_df['총 운영 시간(초)'].idxmax() if not forklift_summary_df.empty and max_operating_time > 0 else '데이터 없음'
+
 
                 local_summary = {
-                    'total_counts': total_operating_counts, 'min_counts': min_operating_counts, 'min_counts_unit': min_operating_unit, 'min_counts_ratio': min_counts_ratio,
-                    'max_counts': max_operating_counts, 'max_counts_unit': max_operating_unit, 'max_counts_ratio': max_counts_ratio, 'avg_counts': avg_operating_counts, 'avg_counts_ratio': avg_counts_ratio,
-                    'total_time': format_time(total_operating_time), 'min_time': format_time(min_operating_time), 'min_time_unit': min_time_unit, 'min_time_ratio': min_time_ratio,
-                    'max_time': format_time(max_operating_time), 'max_time_unit': max_time_unit, 'max_time_ratio': max_time_ratio, 'avg_time': format_time(avg_operating_time), 'avg_time_ratio': avg_time_ratio
+                    'total_counts': total_operating_counts, 'min_counts': min_operating_counts, 'min_counts_unit': min_operating_unit,
+                    'max_counts': max_operating_counts, 'max_counts_unit': max_operating_unit, 'avg_counts': avg_operating_counts,
+                    'total_time': format_time(total_operating_time), 'min_time': format_time(min_operating_time), 'min_time_unit': min_time_unit,
+                    'max_time': format_time(max_operating_time), 'max_time_unit': max_time_unit, 'avg_time': format_time(avg_operating_time_sec) # 차량별 평균시간의 평균을 사용
                 }
-            except Exception:
+            except Exception as e:
+                st.warning(f"요약 정보 생성 중 오류: {e}")
                 local_summary = {}
     return pivot_data, title_prefix, index_name, local_summary
 
@@ -231,14 +223,14 @@ if df is not None:
     )
 
     if pivot_data_dict and isinstance(pivot_data_dict, dict):
-        main_pivot_table = None
-        heatmap_cell_times = None
-        forklift_summary_for_display = None
+        main_pivot_table = None # 히트맵 또는 '운영 대수'용 기본 테이블
+        heatmap_cell_times = None    # '운영 횟수' 시 히트맵 셀 툴팁용 시간 데이터
+        forklift_summary_for_display = None # '운영 횟수' 시 Y축 레이블 및 왼쪽 막대 그래프용 데이터
 
         if analysis_type == '운영 대수':
             main_pivot_table = pivot_data_dict.get('units')
         elif analysis_type == '운영 횟수':
-            main_pivot_table = pivot_data_dict.get('counts')
+            main_pivot_table = pivot_data_dict.get('counts') # 히트맵용 운영 횟수
             heatmap_cell_times = pivot_data_dict.get('times')
             forklift_summary_for_display = pivot_data_dict.get('forklift_summary')
 
@@ -246,17 +238,17 @@ if df is not None:
             y_axis_title_text = '시작 날짜' if current_index_name == '시작 날짜_표시용' else '차대 코드'
 
             if analysis_type == '운영 횟수' and forklift_summary_for_display is not None and not forklift_summary_for_display.empty:
-                # --- '운영 횟수' 분석: 히트맵 (커스텀 Y축 레이블) + 오른쪽 막대 그래프 ---
+                # --- '운영 횟수' 분석: 왼쪽 (막대 그래프 + 커스텀 Y축) + 오른쪽 (히트맵) ---
                 fig = make_subplots(
                     rows=1, cols=2,
-                    column_widths=[0.65, 0.35], # 히트맵과 막대그래프 너비 비율 조정
-                    specs=[[{}, {"secondary_y": True}]], # 오른쪽 막대그래프를 위한 spec
+                    column_widths=[0.35, 0.65], # 왼쪽 막대그래프, 오른쪽 히트맵 비율
+                    specs=[[{"secondary_x": True}, {}]], # 왼쪽 subplot에 보조 X축 허용
                     shared_yaxes=True,
                     horizontal_spacing=0.02
                 )
 
-                # 1. 히트맵 (왼쪽, col=1) - 커스텀 Y축 레이블 적용
-                y_tickvals_ordered = main_pivot_table.index.tolist()
+                # 1. 커스텀 Y축 레이블 준비 (공유 Y축에 적용됨)
+                y_tickvals_ordered = main_pivot_table.index.tolist() # 정렬된 '차대 코드'
                 custom_y_tick_texts = []
                 for forklift_id_val in y_tickvals_ordered:
                     if forklift_id_val in forklift_summary_for_display.index:
@@ -267,6 +259,31 @@ if df is not None:
                     else:
                         custom_y_tick_texts.append(f"정보없음 | {forklift_id_val}")
 
+                # 2. 왼쪽 열 (col=1): 차대별 요약 막대 그래프
+                # 총 운영 횟수 막대
+                fig.add_trace(go.Bar(
+                    y=y_tickvals_ordered, # 실제 데이터 매핑용 Y값
+                    x=forklift_summary_for_display['총 운영 횟수'],
+                    name='총 운영 횟수',
+                    orientation='h',
+                    marker_color='rgba(95, 0, 128, 0.7)',
+                    text=forklift_summary_for_display['총 운영 횟수'].apply(lambda x: f'{int(x)}회'),
+                    textposition='outside', hoverinfo='y+x' # y는 커스텀 레이블, x는 값
+                ), row=1, col=1) # xaxis='x' (기본값)
+
+                # 평균 사용 시간 막대 (보조 X축 사용)
+                fig.add_trace(go.Bar(
+                    y=y_tickvals_ordered, # 실제 데이터 매핑용 Y값
+                    x=forklift_summary_for_display['평균 운영 시간(초)'],
+                    name='평균 사용 시간',
+                    orientation='h',
+                    marker_color='rgba(255, 165, 0, 0.7)',
+                    text=forklift_summary_for_display['평균 운영 시간(초)'].apply(lambda x: format_time(x)),
+                    textposition='outside', hoverinfo='y+x', # y는 커스텀 레이블, x는 값
+                    xaxis='x2' # 첫 번째 subplot의 보조 X축 사용
+                ), row=1, col=1)
+
+                # 3. 오른쪽 열 (col=2): 히트맵
                 tooltip_texts_heatmap = []
                 for r_idx, r_label_val in enumerate(main_pivot_table.index):
                     row_tooltips = []
@@ -286,11 +303,11 @@ if df is not None:
                 fig.add_trace(go.Heatmap(
                     z=main_pivot_table.values,
                     x=main_pivot_table.columns,
-                    y=y_tickvals_ordered,
+                    y=y_tickvals_ordered, # 실제 데이터 매핑용 Y값
                     colorscale=[[0, 'rgb(255,255,255)'], [0.01, 'rgb(240, 230, 247)'], [1, '#5f0080']],
                     hoverinfo='text', text=tooltip_texts_heatmap, zmin=0,
-                    colorbar=dict(title='횟수', x=0.62, len=0.8, y=0.5, yanchor='middle') # 컬러바 위치 조정
-                ), row=1, col=1)
+                    colorbar=dict(title='횟수', x=1.0, len=0.8, y=0.5, yanchor='middle') # 컬러바 위치 조정 (오른쪽 끝)
+                ), row=1, col=2) # xaxis='x3' (기본값)
 
                 # 히트맵 최대값 하이라이트
                 if main_pivot_table.values.size > 0:
@@ -309,59 +326,37 @@ if df is not None:
                                             marker=dict(size=12, color='yellow', symbol='circle-open', line=dict(width=2, color='black')),
                                             text=[f'<b>동시간대 운영(최대): {int(max_value_cell_h)}회</b>'],
                                             textposition='top right', textfont=dict(color='black', size=12), hoverinfo='none'
-                                        ), row=1, col=1)
+                                        ), row=1, col=2) # 히트맵 subplot에 추가
                     except Exception: pass
-
-                # 2. 차대별 요약 막대 그래프 (오른쪽, col=2)
-                fig.add_trace(go.Bar(
-                    y=forklift_summary_for_display.index,
-                    x=forklift_summary_for_display['총 운영 횟수'],
-                    name='총 운영 횟수',
-                    orientation='h',
-                    marker_color='rgba(95, 0, 128, 0.7)',
-                    text=forklift_summary_for_display['총 운영 횟수'].apply(lambda x: f'{int(x)}회'),
-                    textposition='outside', hoverinfo='y+x'
-                ), row=1, col=2, secondary_y=False)
-
-                fig.add_trace(go.Bar(
-                    y=forklift_summary_for_display.index,
-                    x=forklift_summary_for_display['평균 운영 시간(초)'],
-                    name='평균 사용 시간',
-                    orientation='h',
-                    marker_color='rgba(255, 165, 0, 0.7)',
-                    text=forklift_summary_for_display['평균 운영 시간(초)'].apply(lambda x: format_time(x)),
-                    textposition='outside', hoverinfo='y+x'
-                ), row=1, col=2, secondary_y=True)
 
                 # 전체 레이아웃 업데이트
                 fig.update_layout(
                     title={'text': current_title, 'y':0.95, 'x':0.5, 'xanchor': 'center', 'yanchor': 'top', 'font': {'size': 20, 'family': "Arial Black, sans-serif", 'color': 'black'}},
-                    # 히트맵 축 (xaxis, yaxis)
-                    xaxis=dict(domain=[0, 0.63], title='시간대', tickangle=45, automargin=True, showspikes=True, spikemode='across', spikesnap='data', spikethickness=1, spikecolor='grey'), # 히트맵 X축 도메인 조정
+                    # 공유 Y축 (왼쪽 막대그래프와 오른쪽 히트맵 모두에 적용)
                     yaxis=dict(
                         title="", # Y축 제목 없음
                         tickmode='array', tickvals=y_tickvals_ordered, ticktext=custom_y_tick_texts,
-                        autorange="reversed", automargin=True,
+                        autorange="reversed", automargin=True, # 레이블 길이에 맞춰 자동 여백
                         showspikes=True, spikemode='across', spikesnap='data', spikethickness=1, spikecolor='grey'
                     ),
-                    # 막대 그래프 축 (xaxis2, yaxis2, yaxis3)
-                    xaxis2=dict(domain=[0.67, 1.0], title='총 운영 횟수', side='bottom', showgrid=False, automargin=True), # 막대그래프 주 X축 (총 횟수)
-                    yaxis2=dict(showticklabels=False, showgrid=False, zeroline=False), # 막대그래프 Y축 레이블 숨김 (공유되므로)
-                    yaxis3=dict(title='평균 사용 시간(초)', overlaying='y', side='right', showgrid=False, zeroline=False, automargin=True, showticklabels=True, ticks="outside", tickfont=dict(size=10)), # 막대그래프 보조 Y축 (평균 시간 값 표시용)
+                    # 왼쪽 subplot (막대 그래프)의 X축들
+                    xaxis=dict(domain=[0, 0.16], title='총횟수', automargin=True, titlefont=dict(size=10)), # 총 운영 횟수 축
+                    xaxis2=dict(domain=[0.17, 0.33], title='평균시간', overlaying='x', side='top', automargin=True, titlefont=dict(size=10), tickfont=dict(size=9)), # 평균 사용 시간 축
+                    # 오른쪽 subplot (히트맵)의 X축
+                    xaxis3=dict(domain=[0.35, 1.0], title='시간대', tickangle=45, automargin=True, showspikes=True, spikemode='across', spikesnap='data', spikethickness=1, spikecolor='grey'),
 
                     plot_bgcolor='rgba(245, 245, 245, 1)', paper_bgcolor='white',
-                    margin=dict(l=260, r=50, t=100, b=100), # 왼쪽 여백 유지, 하단 여백 증가
+                    margin=dict(l=260, r=10, t=100, b=100), # 왼쪽 여백 유지, 오른쪽 여백 축소
                     height=graph_height, width=graph_width,
                     hovermode='closest',
                     legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
                     bargap=0.2
                 )
-                # Y축 순서 동기화 (autorange="reversed"가 이미 yaxis에 적용됨)
-                # 막대 그래프의 X축 값 순서 관련해서는 특별한 반전이 필요 없을 수 있음 (기본 값 표시)
+                # 히트맵의 Y축 레이블은 공유되므로 별도 설정 불필요. 막대그래프 쪽 Y축 레이블도 자동으로 공유됨.
 
             elif analysis_type == '운영 대수':
                 # --- '운영 대수' 분석: 기본 단일 히트맵 ---
-                fig = make_subplots(rows=1, cols=1) # 명시적으로 1x1 서브플롯 생성
+                fig = make_subplots(rows=1, cols=1)
                 tooltip_texts_list = []
                 for r_idx, r_label_val in enumerate(main_pivot_table.index):
                     row_tooltips = []
@@ -378,7 +373,6 @@ if df is not None:
                     colorbar=dict(title='운영 대수')
                 ))
 
-                # 최대값 하이라이트
                 if main_pivot_table.values.size > 0:
                     try:
                         numeric_values = pd.to_numeric(main_pivot_table.values.flatten(), errors='coerce')
@@ -403,42 +397,40 @@ if df is not None:
                     xaxis=dict(title='시간대', fixedrange=False, tickangle=45, automargin=True, showspikes=True, spikemode='across', spikesnap='data', spikethickness=1, spikecolor='grey'),
                     yaxis=dict(title=y_axis_title_text, fixedrange=False, automargin=True, showspikes=True, spikemode='across', spikesnap='data', spikethickness=1, spikecolor='grey', type='category', categoryorder='array', categoryarray=sorted(main_pivot_table.index.astype(str))),
                     plot_bgcolor='rgba(245, 245, 245, 1)', paper_bgcolor='white',
-                    margin=dict(l=100, r=50, t=100, b=80),
+                    margin=dict(l=100, r=50, t=100, b=80), # '운영 대수' 시 표준 여백
                     height=graph_height, width=graph_width,
                     hovermode='closest'
                 )
-            else: # 예기치 않은 경우 또는 데이터 부족으로 그래프 생성 불가
+            else:
                  st.warning("선택된 분석 유형에 대한 그래프를 표시할 수 없거나 필요한 데이터가 부족합니다.")
 
 
-            if 'fig' in locals() and fig is not None : # fig 객체가 유효한 경우에만 표시
+            if 'fig' in locals() and fig is not None :
                  st.plotly_chart(fig, use_container_width=False)
 
-            # --- 요약 정보 표시 (이전과 동일) ---
             st.markdown("---")
             st.subheader("📊 요약 정보")
-            # ... (요약 정보 표시 로직은 변경 없음) ...
             if summary_info:
                 if analysis_type == '운영 대수':
                     summary_cols = st.columns(4)
                     with summary_cols[0]: st.metric(label="총 운영된 차량 수", value=f"{summary_info.get('total_units', 'N/A')} 대")
-                    with summary_cols[1]: st.metric(label="일 평균 운영 대수", value=f"{summary_info.get('avg_units', 'N/A')} 대", delta=f"{summary_info.get('avg_units_ratio', 0):.1f}%", delta_color="off")
-                    with summary_cols[2]: st.metric(label=f"최소 운영 ({summary_info.get('min_units_day', 'N/A')})", value=f"{summary_info.get('min_units', 'N/A')} 대", delta=f"{summary_info.get('min_units_ratio', 0):.1f}%", delta_color="inverse")
-                    with summary_cols[3]: st.metric(label=f"최대 운영 ({summary_info.get('max_units_day', 'N/A')})", value=f"{summary_info.get('max_units', 'N/A')} 대", delta=f"{summary_info.get('max_units_ratio', 0):.1f}%", delta_color="normal")
+                    with summary_cols[1]: st.metric(label="일 평균 운영 대수", value=f"{summary_info.get('avg_units', 'N/A')} 대")
+                    with summary_cols[2]: st.metric(label=f"최소 운영 ({summary_info.get('min_units_day', 'N/A')})", value=f"{summary_info.get('min_units', 'N/A')} 대")
+                    with summary_cols[3]: st.metric(label=f"최대 운영 ({summary_info.get('max_units_day', 'N/A')})", value=f"{summary_info.get('max_units', 'N/A')} 대")
                 elif analysis_type == '운영 횟수':
                     st.markdown("##### 🔢 운영 횟수 요약 (차량별)")
                     count_cols = st.columns(4)
                     with count_cols[0]: st.metric(label="전체 운영 횟수", value=f"{summary_info.get('total_counts', 'N/A')} 회")
-                    with count_cols[1]: st.metric(label="차량 평균 운영 횟수", value=f"{summary_info.get('avg_counts', 'N/A')} 회", delta=f"{summary_info.get('avg_counts_ratio', 0):.1f}%", delta_color="off")
-                    with count_cols[2]: st.metric(label=f"최소 운영 ({summary_info.get('min_counts_unit', 'N/A')})", value=f"{summary_info.get('min_counts', 'N/A')} 회", delta=f"{summary_info.get('min_counts_ratio', 0):.1f}%", delta_color="inverse")
-                    with count_cols[3]: st.metric(label=f"최대 운영 ({summary_info.get('max_counts_unit', 'N/A')})", value=f"{summary_info.get('max_counts', 'N/A')} 회", delta=f"{summary_info.get('max_counts_ratio', 0):.1f}%", delta_color="normal")
+                    with count_cols[1]: st.metric(label="차량 평균 운영 횟수", value=f"{summary_info.get('avg_counts', 'N/A')} 회")
+                    with count_cols[2]: st.metric(label=f"최소 운영 ({summary_info.get('min_counts_unit', 'N/A')})", value=f"{summary_info.get('min_counts', 'N/A')} 회")
+                    with count_cols[3]: st.metric(label=f"최대 운영 ({summary_info.get('max_counts_unit', 'N/A')})", value=f"{summary_info.get('max_counts', 'N/A')} 회")
                     st.markdown("---")
                     st.markdown("##### ⏱️ 운영 시간 요약 (차량별)")
                     time_cols = st.columns(4)
                     with time_cols[0]: st.metric(label="전체 운영 시간", value=f"{summary_info.get('total_time', 'N/A')}")
-                    with time_cols[1]: st.metric(label="차량 평균 운영 시간", value=f"{summary_info.get('avg_time', 'N/A')}", delta=f"{summary_info.get('avg_time_ratio', 0):.1f}%", delta_color="off")
-                    with time_cols[2]: st.metric(label=f"최소 운영 ({summary_info.get('min_time_unit', 'N/A')})", value=f"{summary_info.get('min_time', 'N/A')}", delta=f"{summary_info.get('min_time_ratio', 0):.1f}%", delta_color="inverse")
-                    with time_cols[3]: st.metric(label=f"최대 운영 ({summary_info.get('max_time_unit', 'N/A')})", value=f"{summary_info.get('max_time', 'N/A')}", delta=f"{summary_info.get('max_time_ratio', 0):.1f}%", delta_color="normal")
+                    with time_cols[1]: st.metric(label="차량 평균 운영 시간", value=f"{summary_info.get('avg_time', 'N/A')}")
+                    with time_cols[2]: st.metric(label=f"최소 운영 ({summary_info.get('min_time_unit', 'N/A')})", value=f"{summary_info.get('min_time', 'N/A')}")
+                    with time_cols[3]: st.metric(label=f"최대 운영 ({summary_info.get('max_time_unit', 'N/A')})", value=f"{summary_info.get('max_time', 'N/A')}")
             else:
                 st.info("요약 정보를 표시할 데이터가 충분하지 않거나, 요약 정보 계산 중 오류가 발생했습니다.")
         elif current_title == "데이터 없음 (필터링 후)":
