@@ -76,7 +76,7 @@ with st.sidebar:
 
             st.header("📊 분석 옵션")
             analysis_type = st.radio("분석 유형 선택:", ('운영 대수', '운영 횟수'), key='analysis_type')
-            
+
             # 필터 옵션 생성 전 df 유효성 검사
             if df is not None and not df.empty and '월' in df.columns:
                 month_options = ['전체'] + sorted(df['월'].dropna().unique().astype(int).tolist())
@@ -345,18 +345,9 @@ if df is not None:
                     xaxis=dict(title='시간대', tickangle=45, automargin=True, showspikes=True, spikemode='across', spikesnap='data', spikethickness=1, spikecolor='grey'), # 히트맵 X축
                     yaxis=dict(title=y_axis_title, automargin=True, showspikes=False, type='category'), # 공유 Y축 (히트맵 기준)
 
-                    # 막대그래프 X축 설정 (첫 번째 막대그래프용 - 총 운영 횟수)
-                    xaxis2=dict(title='총 운영 횟수', side='bottom', showgrid=False, automargin=True),
-                    # 막대그래프 보조 X축 설정 (두 번째 막대그래프용 - 평균 사용 시간)
-                    # secondary_y=True인 trace에 대한 축은 layout.xaxis(N)이 아닌 layout.yaxis(N)으로 설정하는게 일반적이나,
-                    # 여기서는 X축에 대한 이중 표현이므로, secondary_x축을 명시적으로 만들지 않고,
-                    # 두 Bar trace가 같은 subplot(col=2)에 그려지도록 하고, secondary_y로 Y축을 분리함.
-                    # X축 타이틀은 각 Bar trace의 name으로 충분히 표현될 수 있음.
-                    # 필요시, 레이아웃에서 xaxis2, xaxis3 등으로 별도 X축 정의 후 domain, overlaying 등으로 배치 가능.
-                    # 현재 코드는 secondary_y를 통해 Y축을 분리하고, X축은 공유된 공간에 두 종류의 막대를 그림.
-
+                    xaxis2=dict(title='총 운영 횟수 / 평균 사용 시간(초)', side='bottom', showgrid=False, automargin=True), # 막대그래프 쪽 X축 통합 타이틀
                     yaxis2=dict(showticklabels=False, showgrid=False, zeroline=False), # 막대그래프 쪽 Y축 레이블 숨김 (히트맵과 공유)
-                    yaxis3=dict(title='평균 사용 시간(초)', overlaying='y', side='right', automargin=True, showgrid=False, zeroline=False), # 평균 사용 시간 막대의 Y축 (실제로는 X축 값에 해당)
+                    yaxis3=dict(title='평균 사용 시간(초)', overlaying='y', side='right', automargin=True, showgrid=False, zeroline=False, showticklabels=False, ticks=""), # 불필요한 보조 Y축 숨김 강화
 
                     plot_bgcolor='rgba(245, 245, 245, 1)', paper_bgcolor='white',
                     margin=dict(l=100, r=50, t=100, b=100), # 하단 여백 증가
@@ -365,20 +356,12 @@ if df is not None:
                     legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
                     bargap=0.2, # 막대 간 간격
                 )
-                # specs에서 secondary_y=True로 설정한 subplot의 Y축을 참조하여 레이아웃 업데이트
-                fig.update_layout(
-                    yaxis_showticklabels=True, yaxis2_showticklabels=False, # 첫번째 Y축은 보이고, 두번째(막대그래프쪽)는 숨김
-                    xaxis2_title_text="총 운영 횟수 / 평균 사용 시간(초)", # 막대그래프 쪽 X축 통합 타이틀
-                    yaxis3_title_text="", yaxis3_showticklabels=False, yaxis3_ticks="" # 불필요한 보조 Y축 숨김
-                )
-
 
                 # Y축 순서 정렬 (히트맵과 막대그래프 동일하게)
-                # forklift_summary_for_graph.index 와 pivot_table.index는 이미 정렬되어 있음
                 sorted_y_labels = pivot_table.index.astype(str).tolist() # 정렬된 인덱스 사용
                 fig.update_yaxes(categoryorder='array', categoryarray=sorted_y_labels, row=1, col=1)
                 fig.update_yaxes(categoryorder='array', categoryarray=sorted_y_labels, autorange="reversed", row=1, col=2) # 막대그래프 Y축 순서 반전하여 히트맵과 일치
-                fig.update_xaxes(autorange="reversed", row=1, col=2, secondary_y=True) # 평균 사용 시간 막대 순서도 맞추기 위함
+                fig.update_xaxes(autorange="reversed", row=1, col=2) # 해당 서브플롯의 X축에 적용 (secondary_y 인수 제거)
 
 
             else: # 운영 대수 분석 또는 운영 횟수 분석 시 필요한 데이터가 없는 경우 (기존 히트맵만 표시)
