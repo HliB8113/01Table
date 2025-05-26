@@ -105,7 +105,7 @@ with st.sidebar:
             
             # 폰트 크기 슬라이더 초기화
             y_axis_font_size = 10 # '운영 횟수' 용 기본값
-            bar_label_font_size = 30 # '운영 시간' 용 기본값 (키움)
+            bar_label_font_size = 60 # '운영 시간' 용 기본값 (키움)
 
             if analysis_type == '운영 횟수':
                 y_axis_font_size = st.slider('Y축 레이블 폰트 크기 (운영 횟수 시)', min_value=8, max_value=20, value=y_axis_font_size, step=1, key='y_font_slider')
