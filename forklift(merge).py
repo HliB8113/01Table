@@ -92,7 +92,7 @@ with st.sidebar:
             st.header("📐 그래프 설정")
             graph_height = st.slider('그래프 높이 조절', min_value=300, max_value=1500, value=900, step=50, key='height_slider')
             graph_width = st.slider('그래프 너비 조절', min_value=300, max_value=2500, value=1800, step=50, key='width_slider')
-            y_axis_font_size = st.slider('Y축 레이블 폰트 크기 (운영 횟수)', min_value=8, max_value=20, value=10, step=1, key='y_font_slider')
+            y_axis_font_size = st.slider('Y축 레이블 폰트 크기 (운영 횟수 시)', min_value=8, max_value=20, value=10, step=1, key='y_font_slider')
 
 
         except pd.errors.EmptyDataError:
@@ -106,6 +106,7 @@ with st.sidebar:
             df = None
 
 # --- 함수 정의: 피벗 테이블 및 요약 정보 생성 ---
+# generate_pivot 함수는 이전과 동일하게 유지합니다.
 def generate_pivot(original_df, month, department, process, forklift_class, workplace, analysis_type, current_selected_month_in_sidebar):
     filtered_df = original_df.copy()
     if month != '전체': filtered_df = filtered_df[filtered_df['월'] == month]
@@ -234,13 +235,25 @@ if df is not None:
 
             if analysis_type == '운영 횟수' and forklift_summary_for_display is not None and not forklift_summary_for_display.empty:
                 # --- '운영 횟수' 분석: 왼쪽 (평균시간 막대 + 커스텀 Y축) + 오른쪽 (히트맵) ---
-                col_width_left = 0.25 # 왼쪽 막대그래프 너비 비율 (조정 가능)
-                col_width_right = 0.75 # 오른쪽 히트맵 너비 비율 (조정 가능)
+                # Y축 레이블 폰트 크기에 따른 왼쪽 여백 및 컬럼 너비 동적 계산 (근사치)
+                if y_axis_font_size >= 16:
+                    margin_left = 320 + (y_axis_font_size - 16) * 10
+                    col_width_left_dynamic = 0.30
+                elif y_axis_font_size >= 12:
+                    margin_left = 280 + (y_axis_font_size - 12) * 10
+                    col_width_left_dynamic = 0.28
+                else:
+                    margin_left = 260 + y_axis_font_size * 2 # 최소 여백 확보
+                    col_width_left_dynamic = 0.25
+                
+                # 왼쪽 컬럼 너비가 너무 커지지 않도록 제한
+                col_width_left_dynamic = min(col_width_left_dynamic, 0.4) 
+                col_width_right_dynamic = 1.0 - col_width_left_dynamic
                 spacing = 0.03
 
                 fig = make_subplots(
                     rows=1, cols=2,
-                    column_widths=[col_width_left, col_width_right],
+                    column_widths=[col_width_left_dynamic, col_width_right_dynamic],
                     shared_yaxes=True,
                     horizontal_spacing=spacing
                 )
@@ -265,7 +278,7 @@ if df is not None:
                     orientation='h',
                     marker_color='rgba(255, 165, 0, 0.7)',
                     text=forklift_summary_for_display['평균 운영 시간(초)'].apply(lambda x: format_time(x)),
-                    textposition='outside',
+                    textposition='auto', # 'auto'로 변경하여 자동 위치 조정
                     hoverinfo='text',
                     hovertext=[f"{custom_y_tick_texts[i].split(' | ')[1]}<br>평균 사용 시간: {format_time(forklift_summary_for_display['평균 운영 시간(초)'].iloc[i])}" for i in range(len(custom_y_tick_texts))],
                     xaxis='x1'
@@ -294,7 +307,7 @@ if df is not None:
                     y=y_tickvals_ordered,
                     colorscale=[[0, 'rgb(255,255,255)'], [0.01, 'rgb(240, 230, 247)'], [1, '#5f0080']],
                     hoverinfo='text', text=tooltip_texts_heatmap, zmin=0,
-                    colorbar=dict(title='횟수', x=1.01, len=0.9, y=0.5, yanchor='middle', xanchor='left'), # 컬러바 위치 약간 조정
+                    colorbar=dict(title='횟수', x=1.01, len=0.9, y=0.5, yanchor='middle', xanchor='left'),
                     xaxis='x2'
                 ), row=1, col=2)
 
@@ -330,22 +343,27 @@ if df is not None:
                         showspikes=False
                     ),
                     xaxis1=dict( # 왼쪽 막대 그래프의 X축
-                        domain=[0, col_width_left - (spacing / 2)],
+                        domain=[0, col_width_left_dynamic - (spacing / 2) if col_width_left_dynamic > spacing else 0], # 음수 방지
                         title='평균 운영 시간', automargin=True, titlefont=dict(size=10),
-                        showgrid=False
+                        showgrid=False, fixedrange=False # 확대/축소 허용
                     ),
                     xaxis2=dict( # 오른쪽 히트맵의 X축
-                        domain=[col_width_left + (spacing / 2), 1.0],
+                        domain=[col_width_left_dynamic + (spacing / 2) if col_width_left_dynamic < 1.0 - spacing else col_width_left_dynamic, 1.0], # 시작점 조정
                         title='시간대', tickangle=45, automargin=True,
-                        showspikes=True, spikemode='across', spikesnap='data', spikethickness=1, spikecolor='grey'
+                        showspikes=True, spikemode='across', spikesnap='data', spikethickness=1, spikecolor='grey',
+                        fixedrange=False # 확대/축소 허용
                     ),
                     plot_bgcolor='rgba(245, 245, 245, 1)', paper_bgcolor='white',
-                    margin=dict(l=300, r=30, t=100, b=100), # 왼쪽 여백 증가, 오른쪽 여백 조정
+                    margin=dict(l=margin_left, r=30, t=100, b=100), # 동적 왼쪽 여백 적용
                     height=graph_height, width=graph_width,
                     hovermode='closest',
                     legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-                    bargap=0.2 # 막대그래프 간격 (현재는 단일 막대라 큰 의미 없음)
+                    bargap=0.2
                 )
+                # 모든 축에 대해 automargin 명시적 활성화 (Plotly 기본값이지만 확실히 하기 위해)
+                fig.update_xaxes(automargin=True)
+                fig.update_yaxes(automargin=True)
+
 
             elif analysis_type == '운영 대수':
                 # --- '운영 대수' 분석: 기본 단일 히트맵 ---
@@ -387,7 +405,7 @@ if df is not None:
 
                 fig.update_layout(
                     title={'text': current_title, 'y':0.95, 'x':0.5, 'xanchor': 'center', 'yanchor': 'top', 'font': {'size': 20, 'family': "Arial Black, sans-serif", 'color': 'black'}},
-                    xaxis=dict(title='시간대', fixedrange=False, tickangle=45, automargin=True, showspikes=True, spikemode='across', spikesnap='data', spikethickness=1, spikecolor='grey'),
+                    xaxis=dict(title='시간대', fixedrange=False, automargin=True, showspikes=True, spikemode='across', spikesnap='data', spikethickness=1, spikecolor='grey', tickangle=45),
                     yaxis=dict(title=y_axis_title_text, fixedrange=False, automargin=True, showspikes=True, spikemode='across', spikesnap='data', spikethickness=1, spikecolor='grey', type='category', categoryorder='array', categoryarray=sorted(main_pivot_table.index.astype(str))),
                     plot_bgcolor='rgba(245, 245, 245, 1)', paper_bgcolor='white',
                     margin=dict(l=100, r=50, t=100, b=80),
