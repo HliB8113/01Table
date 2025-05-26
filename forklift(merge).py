@@ -92,6 +92,8 @@ with st.sidebar:
             st.header("📐 그래프 설정")
             graph_height = st.slider('그래프 높이 조절', min_value=300, max_value=1500, value=900, step=50, key='height_slider')
             graph_width = st.slider('그래프 너비 조절', min_value=300, max_value=2500, value=1800, step=50, key='width_slider')
+            y_axis_font_size = st.slider('Y축 레이블 폰트 크기 (운영 횟수)', min_value=8, max_value=20, value=10, step=1, key='y_font_slider')
+
 
         except pd.errors.EmptyDataError:
             st.error("업로드된 CSV 파일이 비어있습니다.")
@@ -232,8 +234,8 @@ if df is not None:
 
             if analysis_type == '운영 횟수' and forklift_summary_for_display is not None and not forklift_summary_for_display.empty:
                 # --- '운영 횟수' 분석: 왼쪽 (평균시간 막대 + 커스텀 Y축) + 오른쪽 (히트맵) ---
-                col_width_left = 0.25 # 왼쪽 막대그래프 너비 비율
-                col_width_right = 0.75 # 오른쪽 히트맵 너비 비율
+                col_width_left = 0.25 # 왼쪽 막대그래프 너비 비율 (조정 가능)
+                col_width_right = 0.75 # 오른쪽 히트맵 너비 비율 (조정 가능)
                 spacing = 0.03
 
                 fig = make_subplots(
@@ -261,12 +263,12 @@ if df is not None:
                     x=forklift_summary_for_display['평균 운영 시간(초)'],
                     name='평균 사용 시간',
                     orientation='h',
-                    marker_color='rgba(255, 165, 0, 0.7)', # 주황색 계열
+                    marker_color='rgba(255, 165, 0, 0.7)',
                     text=forklift_summary_for_display['평균 운영 시간(초)'].apply(lambda x: format_time(x)),
                     textposition='outside',
                     hoverinfo='text',
                     hovertext=[f"{custom_y_tick_texts[i].split(' | ')[1]}<br>평균 사용 시간: {format_time(forklift_summary_for_display['평균 운영 시간(초)'].iloc[i])}" for i in range(len(custom_y_tick_texts))],
-                    xaxis='x1' # subplot1의 X축 명시 (기본값)
+                    xaxis='x1'
                 ), row=1, col=1)
 
                 # 3. 오른쪽 열 (col=2): 히트맵
@@ -292,8 +294,8 @@ if df is not None:
                     y=y_tickvals_ordered,
                     colorscale=[[0, 'rgb(255,255,255)'], [0.01, 'rgb(240, 230, 247)'], [1, '#5f0080']],
                     hoverinfo='text', text=tooltip_texts_heatmap, zmin=0,
-                    colorbar=dict(title='횟수', x=1.0, len=0.9, y=0.5, yanchor='middle'),
-                    xaxis='x2' # subplot2의 X축 명시
+                    colorbar=dict(title='횟수', x=1.01, len=0.9, y=0.5, yanchor='middle', xanchor='left'), # 컬러바 위치 약간 조정
+                    xaxis='x2'
                 ), row=1, col=2)
 
                 # 히트맵 최대값 하이라이트
@@ -306,14 +308,14 @@ if df is not None:
                             if max_value_cell_h > 0:
                                 max_indices_h = np.where(main_pivot_table.values == max_value_cell_h)
                                 if len(max_indices_h[0]) > 0:
-                                    for y_idx, x_idx_val in zip(max_indices_h[0], max_indices_h[1]): # x_idx -> x_idx_val
+                                    for y_idx, x_idx_val in zip(max_indices_h[0], max_indices_h[1]):
                                         fig.add_trace(go.Scatter(
                                             x=[main_pivot_table.columns[x_idx_val]], y=[main_pivot_table.index[y_idx]],
                                             mode='markers+text',
                                             marker=dict(size=12, color='yellow', symbol='circle-open', line=dict(width=2, color='black')),
                                             text=[f'<b>동시간대 운영(최대): {int(max_value_cell_h)}회</b>'],
                                             textposition='top right', textfont=dict(color='black', size=12), hoverinfo='none',
-                                            xaxis='x2' # 히트맵의 X축 사용
+                                            xaxis='x2'
                                         ), row=1, col=2)
                     except Exception: pass
 
@@ -324,24 +326,25 @@ if df is not None:
                         title="",
                         tickmode='array', tickvals=y_tickvals_ordered, ticktext=custom_y_tick_texts,
                         autorange="reversed", automargin=True,
+                        tickfont=dict(size=y_axis_font_size), # Y축 레이블 폰트 크기 적용
                         showspikes=False
                     ),
-                    xaxis1=dict( # 왼쪽 막대 그래프의 X축 (Plotly는 x1, x2...로 명명)
-                        domain=[0, col_width_left - spacing/2],
+                    xaxis1=dict( # 왼쪽 막대 그래프의 X축
+                        domain=[0, col_width_left - (spacing / 2)],
                         title='평균 운영 시간', automargin=True, titlefont=dict(size=10),
                         showgrid=False
                     ),
                     xaxis2=dict( # 오른쪽 히트맵의 X축
-                        domain=[col_width_left + spacing/2, 1.0],
+                        domain=[col_width_left + (spacing / 2), 1.0],
                         title='시간대', tickangle=45, automargin=True,
                         showspikes=True, spikemode='across', spikesnap='data', spikethickness=1, spikecolor='grey'
                     ),
                     plot_bgcolor='rgba(245, 245, 245, 1)', paper_bgcolor='white',
-                    margin=dict(l=280, r=20, t=100, b=100), # 왼쪽 여백 유지, 오른쪽 여백 약간 증가
+                    margin=dict(l=300, r=30, t=100, b=100), # 왼쪽 여백 증가, 오른쪽 여백 조정
                     height=graph_height, width=graph_width,
                     hovermode='closest',
                     legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-                    bargap=0.2
+                    bargap=0.2 # 막대그래프 간격 (현재는 단일 막대라 큰 의미 없음)
                 )
 
             elif analysis_type == '운영 대수':
@@ -372,7 +375,7 @@ if df is not None:
                             if max_value_cell > 0:
                                 max_indices = np.where(main_pivot_table.values == max_value_cell)
                                 if len(max_indices[0]) > 0:
-                                    for y_idx, x_idx_val in zip(max_indices[0], max_indices[1]): # x_idx -> x_idx_val
+                                    for y_idx, x_idx_val in zip(max_indices[0], max_indices[1]):
                                         fig.add_trace(go.Scatter(
                                             x=[main_pivot_table.columns[x_idx_val]], y=[main_pivot_table.index[y_idx]],
                                             mode='markers+text',
@@ -404,9 +407,9 @@ if df is not None:
                 if analysis_type == '운영 대수':
                     summary_cols = st.columns(4)
                     with summary_cols[0]: st.metric(label="총 운영된 차량 수", value=f"{summary_info.get('total_units', 'N/A')} 대")
-                    with summary_cols[1]: st.metric(label="일 평균 운영 대수", value=f"{summary_info.get('avg_units', 'N/A')} 대", delta=f"{summary_info.get('avg_units_ratio', 0):.1f}%", delta_color="off") # 비율 정보 추가 가정
-                    with summary_cols[2]: st.metric(label=f"최소 운영 ({summary_info.get('min_units_day', 'N/A')})", value=f"{summary_info.get('min_units', 'N/A')} 대", delta=f"{summary_info.get('min_units_ratio', 0):.1f}%", delta_color="inverse") # 비율 정보 추가 가정
-                    with summary_cols[3]: st.metric(label=f"최대 운영 ({summary_info.get('max_units_day', 'N/A')})", value=f"{summary_info.get('max_units', 'N/A')} 대", delta=f"{summary_info.get('max_units_ratio', 0):.1f}%", delta_color="normal") # 비율 정보 추가 가정
+                    with summary_cols[1]: st.metric(label="일 평균 운영 대수", value=f"{summary_info.get('avg_units', 'N/A')} 대", delta=f"{summary_info.get('avg_units_ratio', 0):.1f}%", delta_color="off")
+                    with summary_cols[2]: st.metric(label=f"최소 운영 ({summary_info.get('min_units_day', 'N/A')})", value=f"{summary_info.get('min_units', 'N/A')} 대", delta=f"{summary_info.get('min_units_ratio', 0):.1f}%", delta_color="inverse")
+                    with summary_cols[3]: st.metric(label=f"최대 운영 ({summary_info.get('max_units_day', 'N/A')})", value=f"{summary_info.get('max_units', 'N/A')} 대", delta=f"{summary_info.get('max_units_ratio', 0):.1f}%", delta_color="normal")
                 elif analysis_type == '운영 횟수':
                     st.markdown("##### 🔢 운영 횟수 요약 (차량별)")
                     count_cols = st.columns(4)
