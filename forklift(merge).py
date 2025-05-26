@@ -104,7 +104,7 @@ with st.sidebar:
             graph_width = st.slider('그래프 너비 조절', min_value=300, max_value=2500, value=1800, step=50, key='width_slider')
             
             y_axis_font_size = 10 
-            bar_label_font_size = 14 
+            bar_label_font_size = 30 
 
             if analysis_type == '운영 횟수':
                 y_axis_font_size = st.slider('Y축 레이블 폰트 크기 (운영 횟수 시)', min_value=8, max_value=20, value=y_axis_font_size, step=1, key='y_font_slider')
