@@ -100,11 +100,11 @@ with st.sidebar:
             selected_workplace = st.selectbox('📍 작업 장소 선택:', workplace_options, key='wp_select')
 
             st.header("📐 그래프 설정")
-            graph_height = st.slider('그래프 높이 조절', min_value=300, max_value=2500, value=900, step=50, key='height_slider')
+            graph_height = st.slider('그래프 높이 조절', min_value=300, max_value=1500, value=900, step=50, key='height_slider')
             graph_width = st.slider('그래프 너비 조절', min_value=300, max_value=2500, value=1800, step=50, key='width_slider')
             
             y_axis_font_size = 10 
-            bar_label_font_size = 30 
+            bar_label_font_size = 16 # '운영 시간' 막대 라벨 폰트 기본값 증가
 
             if analysis_type == '운영 횟수':
                 y_axis_font_size = st.slider('Y축 레이블 폰트 크기 (운영 횟수 시)', min_value=8, max_value=20, value=y_axis_font_size, step=1, key='y_font_slider')
@@ -284,10 +284,8 @@ if df is not None:
         forklift_summary_for_display = None
         total_operation_time_data = None
 
-        # 슬라이더 값을 여기서 한 번만 읽어옴
         current_y_axis_font_size = y_axis_font_size
         current_bar_label_font_size = bar_label_font_size
-
 
         if analysis_type == '운영 대수':
             main_pivot_table = pivot_data_dict.get('units')
@@ -305,7 +303,7 @@ if df is not None:
             fig = None
 
             if analysis_type == '운영 횟수' and forklift_summary_for_display is not None and not forklift_summary_for_display.empty:
-                if current_y_axis_font_size >= 16: # current_y_axis_font_size 사용
+                if current_y_axis_font_size >= 16:
                     margin_left = 320 + (current_y_axis_font_size - 16) * 10
                     col_width_left_dynamic = 0.30
                 elif current_y_axis_font_size >= 12:
@@ -386,18 +384,19 @@ if df is not None:
                                             x=[main_pivot_table.columns[x_idx_val]], y=[main_pivot_table.index[y_idx]],
                                             mode='markers',
                                             marker=dict(size=12, color='yellow', symbol='circle-open', line=dict(width=2, color='black')),
-                                            hoverinfo='none',
+                                            hoverinfo='text', # 툴팁 다시 표시
+                                            hovertext=f'<b>최대 운영 지점</b><br>시간: {main_pivot_table.columns[x_idx_val]}<br>차량: {main_pivot_table.index[y_idx]}<br>횟수: {int(max_value_cell_h)}회', # 툴팁 내용
                                             xaxis='x2'
                                         ), row=1, col=2)
                     except Exception: pass
 
                 fig.update_layout(
-                    title={'text': current_title, 'y':0.95, 'x':0.5, 'xanchor': 'center', 'yanchor': 'top', 'font': {'size': 20, 'family': "Arial Black, sans-serif", 'color': 'black'}},
+                    title={'text': current_title, 'y':0.98, 'x':0.5, 'xanchor': 'center', 'yanchor': 'top', 'font': {'size': 20, 'family': "Arial Black, sans-serif", 'color': 'black'}}, # y 위치 조정
                     yaxis=dict(
                         title="",
                         tickmode='array', tickvals=y_tickvals_ordered, ticktext=custom_y_tick_texts,
                         autorange="reversed", automargin=True,
-                        tickfont=dict(size=current_y_axis_font_size), # current_y_axis_font_size 사용
+                        tickfont=dict(size=current_y_axis_font_size),
                         showspikes=False
                     ),
                     xaxis1=dict(
@@ -411,7 +410,7 @@ if df is not None:
                         showspikes=True, spikemode='across', spikesnap='data', spikethickness=1, spikecolor='grey',
                         fixedrange=False
                     ),
-                    hoverlabel=dict(font_size=14), # 툴팁 폰트 크기 일괄 적용
+                    hoverlabel=dict(font_size=14), 
                     plot_bgcolor='rgba(245, 245, 245, 1)', paper_bgcolor='white',
                     margin=dict(l=margin_left, r=30, t=100, b=100),
                     height=graph_height, width=graph_width,
@@ -455,15 +454,16 @@ if df is not None:
                                             x=[main_pivot_table.columns[x_idx_val]], y=[main_pivot_table.index[y_idx]],
                                             mode='markers',
                                             marker=dict(size=12, color='yellow', symbol='circle-open', line=dict(width=2, color='black')),
-                                            hoverinfo='none'
+                                            hoverinfo='text', # 툴팁 다시 표시
+                                            hovertext=f'<b>최대 운영 지점</b><br>일자: {main_pivot_table.index[y_idx]}<br>시간: {main_pivot_table.columns[x_idx_val]}<br>대수: {int(max_value_cell)}대' # 툴팁 내용
                                         ))
                     except Exception: pass
 
                 fig.update_layout(
-                    title={'text': current_title, 'y':0.95, 'x':0.5, 'xanchor': 'center', 'yanchor': 'top', 'font': {'size': 20, 'family': "Arial Black, sans-serif", 'color': 'black'}},
+                    title={'text': current_title, 'y':0.98, 'x':0.5, 'xanchor': 'center', 'yanchor': 'top', 'font': {'size': 20, 'family': "Arial Black, sans-serif", 'color': 'black'}}, # y 위치 조정
                     xaxis=dict(title='시간대', fixedrange=False, automargin=True, showspikes=True, spikemode='across', spikesnap='data', spikethickness=1, spikecolor='grey', tickangle=45),
                     yaxis=dict(title=y_axis_title_text, fixedrange=False, automargin=True, showspikes=True, spikemode='across', spikesnap='data', spikethickness=1, spikecolor='grey', type='category', categoryorder='array', categoryarray=sorted(main_pivot_table.index.astype(str))),
-                    hoverlabel=dict(font_size=14), # 툴팁 폰트 크기 일괄 적용
+                    hoverlabel=dict(font_size=14), 
                     plot_bgcolor='rgba(245, 245, 245, 1)', paper_bgcolor='white',
                     margin=dict(l=100, r=50, t=100, b=80),
                     height=graph_height, width=graph_width,
@@ -484,10 +484,10 @@ if df is not None:
                     textposition='outside', # 항상 바깥쪽에 표시
                     marker_color='gold', 
                     name='총 운영 시간',
-                    hoverinfo='y+text',
-                    customdata=x_values_op_time_sec,
-                    hovertemplate='<b>%{y}</b><br>총 운영 시간: %{text} (%{customdata}초)<extra></extra>',
-                    textfont=dict(size=current_bar_label_font_size, color='black') # current_bar_label_font_size 사용
+                    hoverinfo='text', # 변경: 기본 툴팁 대신 hovertemplate 사용
+                    # customdata=x_values_op_time_sec, # hovertemplate에서 %{text} 사용하므로 customdata는 불필요할 수 있음
+                    hovertemplate='<b>%{y}</b><br>총 운영 시간: %{text}<extra></extra>', # 초 단위 데이터 제거
+                    textfont=dict(size=current_bar_label_font_size, color='black') 
                 ))
                 
                 if len(x_values_op_time_sec) > 0 and max(x_values_op_time_sec) > 0:
@@ -499,22 +499,22 @@ if df is not None:
                     ticktext_hh_mm = ["00:00"]
 
                 fig.update_layout(
-                    title={'text': current_title, 'y':0.95, 'x':0.5, 'xanchor': 'center', 'yanchor': 'top', 'font': {'size': 20, 'family': "Arial Black, sans-serif", 'color': 'black'}},
+                    title={'text': current_title, 'y':0.98, 'x':0.5, 'xanchor': 'center', 'yanchor': 'top', 'font': {'size': 20, 'family': "Arial Black, sans-serif", 'color': 'black'}}, # y 위치 조정
                     xaxis=dict(
                         title='총 운영 시간 (HH:MM)', 
                         automargin=True,
                         tickmode='array',
                         tickvals=tickvals,
                         ticktext=ticktext_hh_mm,
-                        fixedrange=False # 확대/축소 허용
+                        fixedrange=False 
                     ),
                     yaxis=dict(title='차대 코드', automargin=True, autorange="reversed",
                                categoryorder='array', categoryarray=y_labels_op_time,
-                               fixedrange=False # 확대/축소 허용
+                               fixedrange=False 
                               ),
-                    hoverlabel=dict(font_size=14), # 툴팁 폰트 크기 일괄 적용
+                    hoverlabel=dict(font_size=14), 
                     plot_bgcolor='rgba(245, 245, 245, 1)', paper_bgcolor='white',
-                    margin=dict(l=150, r=50, t=100, b=80), # 오른쪽 여백 확보 (textposition='outside' 시 필요할 수 있음)
+                    margin=dict(l=150, r=50, t=100, b=80), 
                     height=graph_height, width=graph_width,
                     hovermode='y'
                 )
